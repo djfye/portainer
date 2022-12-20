@@ -3,11 +3,17 @@ name: Publish Docker
 on:
   push:
   workflow_dispatch:
-
+    paths:
+      - 'package.json'
+      - 'api/go.mod'
+      - 'gruntfile.js'
+      - 'build/linux/Dockerfile'
+      - 'build/linux/alpine.Dockerfile'
+      - 'build/windows/Dockerfile'
+  
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-
 
 jobs:
   build:
