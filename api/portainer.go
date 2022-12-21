@@ -283,6 +283,7 @@ type (
 		ProjectPath    string                         `json:"ProjectPath"`
 		EntryPoint     string                         `json:"EntryPoint"`
 		Version        int                            `json:"Version"`
+		NumDeployments int                            `json:"NumDeployments"`
 		ManifestPath   string
 		DeploymentType EdgeStackDeploymentType
 		// Uses the manifest's namespaces instead of the default one
@@ -297,11 +298,24 @@ type (
 	//EdgeStackID represents an edge stack id
 	EdgeStackID int
 
+	EdgeStackStatusDetails struct {
+		Pending             bool
+		Ok                  bool
+		Error               bool
+		Acknowledged        bool
+		Remove              bool
+		RemoteUpdateSuccess bool
+		ImagesPulled        bool
+	}
+
 	//EdgeStackStatus represents an edge stack status
 	EdgeStackStatus struct {
-		Type       EdgeStackStatusType `json:"Type"`
-		Error      string              `json:"Error"`
-		EndpointID EndpointID          `json:"EndpointID"`
+		Details    EdgeStackStatusDetails `json:"Details"`
+		Error      string                 `json:"Error"`
+		EndpointID EndpointID             `json:"EndpointID"`
+
+		// Deprecated
+		Type EdgeStackStatusType `json:"Type"`
 	}
 
 	//EdgeStackStatusType represents an edge stack status type
@@ -1381,7 +1395,7 @@ type (
 		GetIngressControllers() (models.K8sIngressControllers, error)
 		GetMetrics() (models.K8sMetrics, error)
 		GetStorage() ([]KubernetesStorageClassConfig, error)
-		CreateIngress(namespace string, info models.K8sIngressInfo) error
+		CreateIngress(namespace string, info models.K8sIngressInfo, owner string) error
 		UpdateIngress(namespace string, info models.K8sIngressInfo) error
 		GetIngresses(namespace string) ([]models.K8sIngressInfo, error)
 		DeleteIngresses(reqs models.K8sIngressDeleteRequests) error
@@ -1558,13 +1572,20 @@ const (
 )
 
 const (
-	_ EdgeStackStatusType = iota
-	//StatusOk represents a successfully deployed edge stack
-	StatusOk
-	//StatusError represents an edge environment(endpoint) which failed to deploy its edge stack
-	StatusError
-	//StatusAcknowledged represents an acknowledged edge stack
-	StatusAcknowledged
+	// EdgeStackStatusPending represents a pending edge stack
+	EdgeStackStatusPending EdgeStackStatusType = iota
+	//EdgeStackStatusOk represents a successfully deployed edge stack
+	EdgeStackStatusOk
+	//EdgeStackStatusError represents an edge environment(endpoint) which failed to deploy its edge stack
+	EdgeStackStatusError
+	//EdgeStackStatusAcknowledged represents an acknowledged edge stack
+	EdgeStackStatusAcknowledged
+	//EdgeStackStatusRemove represents a removed edge stack (status isn't persisted)
+	EdgeStackStatusRemove
+	// StatusRemoteUpdateSuccess represents a successfully updated edge stack
+	EdgeStackStatusRemoteUpdateSuccess
+	// EdgeStackStatusImagesPulled represents a successfully images-pulling
+	EdgeStackStatusImagesPulled
 )
 
 const (
