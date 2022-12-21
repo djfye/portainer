@@ -16,9 +16,9 @@ jobs:
           # token: ${{ secrets.BOT_TOKEN }}
           github_token: ${{ secrets.BOT_TOKEN }}
           personal_token: ${{ secrets.PERSONAL_TOKEN }}
-          owner: containrrr
-          base: main
-          head: main
+          owner: portainer
+          base: develop
+          head: develop
           pr_title: Merge
           auto_approve: true
           # auto_merge: true
