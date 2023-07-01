@@ -1,9 +1,10 @@
 import { RepositoryMechanismTypes } from 'Kubernetes/models/deploy';
 import { FeatureId } from '@/react/portainer/feature-flags/enums';
-import { confirmStackUpdate } from '@/react/docker/stacks/common/confirm-stack-update';
+import { confirmStackUpdate } from '@/react/common/stacks/common/confirm-stack-update';
 
 import { parseAutoUpdateResponse } from '@/react/portainer/gitops/AutoUpdateFieldset/utils';
 import { baseStackWebhookUrl, createWebhookId } from '@/portainer/helpers/webhookHelper';
+import { confirmEnableTLSVerify } from '@/react/portainer/gitops/utils';
 
 class StackRedeployGitFormController {
   /* @ngInject */
@@ -95,8 +96,17 @@ class StackRedeployGitFormController {
     this.onChange({ Env: value });
   }
 
-  onChangeTLSSkipVerify(value) {
-    this.onChange({ TLSSkipVerify: value });
+  async onChangeTLSSkipVerify(value) {
+    return this.$async(async () => {
+      if (this.model.TLSSkipVerify && !value) {
+        const confirmed = await confirmEnableTLSVerify();
+
+        if (!confirmed) {
+          return;
+        }
+      }
+      this.onChange({ TLSSkipVerify: value });
+    });
   }
 
   onChangeOption(values) {

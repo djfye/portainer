@@ -19,8 +19,8 @@ require('./includes/updateconfig.html');
 
 import _ from 'lodash-es';
 
+import * as envVarsUtils from '@/react/components/form-components/EnvironmentVariablesFieldset/utils';
 import { PorImageRegistryModel } from 'Docker/models/porImageRegistry';
-import * as envVarsUtils from '@/portainer/helpers/env-vars';
 import { ResourceControlType } from '@/react/portainer/access-control/types';
 import { confirmServiceForceUpdate } from '@/react/docker/services/common/update-service-modal';
 import { confirm, confirmDelete } from '@@/modals/confirm';
@@ -125,8 +125,10 @@ angular.module('portainer.docker').controller('ServiceController', [
     };
 
     $scope.addEnvironmentVariable = function addEnvironmentVariable(service) {
-      service.EnvironmentVariables.push({ name: '', value: '' });
-      updateServiceArray(service, 'EnvironmentVariables', service.EnvironmentVariables);
+      $scope.$evalAsync(() => {
+        service.EnvironmentVariables = service.EnvironmentVariables.concat({ name: '', value: '' });
+        updateServiceArray(service, 'EnvironmentVariables', service.EnvironmentVariables);
+      });
     };
 
     $scope.onChangeEnvVars = onChangeEnvVars;
@@ -236,6 +238,13 @@ angular.module('portainer.docker').controller('ServiceController', [
       updateServiceArray(service, 'ServiceMounts', service.ServiceMounts);
     };
 
+    $scope.toggleMountReadOnly = function toggleMountReadOnly(isReadOnly, index) {
+      $scope.$evalAsync(function () {
+        updateServiceArray($scope.service, 'ServiceMounts', $scope.service.ServiceMounts);
+        $scope.service.ServiceMounts[index].ReadOnly = isReadOnly;
+      });
+    };
+
     $scope.addNetwork = function addNetwork(service) {
       if (!service.Networks) {
         service.Networks = [];
@@ -334,9 +343,11 @@ angular.module('portainer.docker').controller('ServiceController', [
     };
 
     $scope.onWebhookChange = function (enabled) {
+      enabled = enabled | '';
       $scope.$evalAsync(() => {
         $scope.updateWebhook($scope.service);
         $scope.WebhookExists = enabled;
+        updateServiceAttribute($scope.service, 'Webhooks', enabled);
       });
     };
 
@@ -724,6 +735,7 @@ angular.module('portainer.docker').controller('ServiceController', [
           $scope.isAdmin = Authentication.isAdmin();
           $scope.availableNetworks = data.availableNetworks;
           $scope.swarmNetworks = _.filter($scope.availableNetworks, (network) => network.Scope === 'swarm');
+          $scope.WebhookExists = false;
 
           const serviceNetworks = _.uniqBy(_.concat($scope.service.Model.Spec.Networks || [], $scope.service.Model.Spec.TaskTemplate.Networks || []), 'Target');
           const networks = _.filter(

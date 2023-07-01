@@ -2,23 +2,18 @@ package endpointedge
 
 import (
 	"errors"
-	"net/http"
 
 	httperror "github.com/portainer/libhttp/error"
 	"github.com/portainer/libhttp/request"
 	"github.com/portainer/libhttp/response"
 	portainer "github.com/portainer/portainer/api"
+	"github.com/portainer/portainer/api/edge"
+	"github.com/portainer/portainer/api/filesystem"
 	"github.com/portainer/portainer/api/http/middlewares"
 	"github.com/portainer/portainer/api/internal/endpointutils"
 	"github.com/portainer/portainer/api/kubernetes"
+	"net/http"
 )
-
-type configResponse struct {
-	StackFileContent string
-	Name             string
-	// Namespace to use for Kubernetes manifests, leave empty to use the namespaces defined in the manifest
-	Namespace string
-}
 
 // @summary Inspect an Edge Stack for an Environment(Endpoint)
 // @description **Access policy**: public
@@ -27,7 +22,7 @@ type configResponse struct {
 // @produce json
 // @param id path int true "environment(endpoint) Id"
 // @param stackId path int true "EdgeStack Id"
-// @success 200 {object} configResponse
+// @success 200 {object} edge.StackPayload
 // @failure 500
 // @failure 400
 // @failure 404
@@ -73,17 +68,19 @@ func (handler *Handler) endpointEdgeStackInspect(w http.ResponseWriter, r *http.
 		if fileName == "" {
 			return httperror.BadRequest("Kubernetes is not supported by this stack", errors.New("Kubernetes is not supported by this stack"))
 		}
-
 	}
 
-	stackFileContent, err := handler.FileService.GetFileContent(edgeStack.ProjectPath, fileName)
+	dirEntries, err := filesystem.LoadDir(edgeStack.ProjectPath)
 	if err != nil {
-		return httperror.InternalServerError("Unable to retrieve Compose file from disk", err)
+		return httperror.InternalServerError("Unable to load repository", err)
 	}
 
-	return response.JSON(w, configResponse{
-		StackFileContent: string(stackFileContent),
-		Name:             edgeStack.Name,
-		Namespace:        namespace,
+	dirEntries = filesystem.FilterDirForEntryFile(dirEntries, fileName)
+
+	return response.JSON(w, edge.StackPayload{
+		DirEntries:    dirEntries,
+		EntryFileName: fileName,
+		Name:          edgeStack.Name,
+		Namespace:     namespace,
 	})
 }

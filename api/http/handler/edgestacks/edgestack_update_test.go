@@ -14,8 +14,7 @@ import (
 
 // Update
 func TestUpdateAndInspect(t *testing.T) {
-	handler, rawAPIKey, teardown := setupHandler(t)
-	defer teardown()
+	handler, rawAPIKey := setupHandler(t)
 
 	endpoint := createEndpoint(t, handler.DataStore)
 	edgeStack := createEdgeStack(t, handler.DataStore, endpoint.ID)
@@ -55,10 +54,9 @@ func TestUpdateAndInspect(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	newVersion := 238
 	payload := updateEdgeStackPayload{
 		StackFileContent: "update-test",
-		Version:          &newVersion,
+		UpdateVersion:    true,
 		EdgeGroups:       append(edgeStack.EdgeGroups, newEdgeGroup.ID),
 		DeploymentType:   portainer.EdgeStackDeploymentCompose,
 	}
@@ -102,7 +100,7 @@ func TestUpdateAndInspect(t *testing.T) {
 		t.Fatal("error decoding response:", err)
 	}
 
-	if data.Version != *payload.Version {
+	if payload.UpdateVersion && data.Version != edgeStack.Version+1 {
 		t.Fatalf("expected EdgeStackID %d, found %d", edgeStack.Version, data.Version)
 	}
 
@@ -116,8 +114,7 @@ func TestUpdateAndInspect(t *testing.T) {
 }
 
 func TestUpdateWithInvalidEdgeGroups(t *testing.T) {
-	handler, rawAPIKey, teardown := setupHandler(t)
-	defer teardown()
+	handler, rawAPIKey := setupHandler(t)
 
 	endpoint := createEndpoint(t, handler.DataStore)
 	edgeStack := createEdgeStack(t, handler.DataStore, endpoint.ID)
@@ -134,7 +131,6 @@ func TestUpdateWithInvalidEdgeGroups(t *testing.T) {
 
 	handler.DataStore.EdgeGroup().Create(&newEdgeGroup)
 
-	newVersion := 238
 	cases := []struct {
 		Name               string
 		Payload            updateEdgeStackPayload
@@ -144,7 +140,7 @@ func TestUpdateWithInvalidEdgeGroups(t *testing.T) {
 			"Update with non-existing EdgeGroupID",
 			updateEdgeStackPayload{
 				StackFileContent: "error-test",
-				Version:          &newVersion,
+				UpdateVersion:    true,
 				EdgeGroups:       []portainer.EdgeGroupID{9999},
 				DeploymentType:   edgeStack.DeploymentType,
 			},
@@ -154,7 +150,7 @@ func TestUpdateWithInvalidEdgeGroups(t *testing.T) {
 			"Update with invalid EdgeGroup (non-existing Endpoint)",
 			updateEdgeStackPayload{
 				StackFileContent: "error-test",
-				Version:          &newVersion,
+				UpdateVersion:    true,
 				EdgeGroups:       []portainer.EdgeGroupID{2},
 				DeploymentType:   edgeStack.DeploymentType,
 			},
@@ -164,7 +160,7 @@ func TestUpdateWithInvalidEdgeGroups(t *testing.T) {
 			"Update DeploymentType from Docker to Kubernetes",
 			updateEdgeStackPayload{
 				StackFileContent: "error-test",
-				Version:          &newVersion,
+				UpdateVersion:    true,
 				EdgeGroups:       []portainer.EdgeGroupID{1},
 				DeploymentType:   portainer.EdgeStackDeploymentKubernetes,
 			},
@@ -197,13 +193,11 @@ func TestUpdateWithInvalidEdgeGroups(t *testing.T) {
 }
 
 func TestUpdateWithInvalidPayload(t *testing.T) {
-	handler, rawAPIKey, teardown := setupHandler(t)
-	defer teardown()
+	handler, rawAPIKey := setupHandler(t)
 
 	endpoint := createEndpoint(t, handler.DataStore)
 	edgeStack := createEdgeStack(t, handler.DataStore, endpoint.ID)
 
-	newVersion := 238
 	cases := []struct {
 		Name               string
 		Payload            updateEdgeStackPayload
@@ -213,7 +207,7 @@ func TestUpdateWithInvalidPayload(t *testing.T) {
 			"Update with empty StackFileContent",
 			updateEdgeStackPayload{
 				StackFileContent: "",
-				Version:          &newVersion,
+				UpdateVersion:    true,
 				EdgeGroups:       edgeStack.EdgeGroups,
 				DeploymentType:   edgeStack.DeploymentType,
 			},
@@ -223,7 +217,7 @@ func TestUpdateWithInvalidPayload(t *testing.T) {
 			"Update with empty EdgeGroups",
 			updateEdgeStackPayload{
 				StackFileContent: "error-test",
-				Version:          &newVersion,
+				UpdateVersion:    true,
 				EdgeGroups:       []portainer.EdgeGroupID{},
 				DeploymentType:   edgeStack.DeploymentType,
 			},

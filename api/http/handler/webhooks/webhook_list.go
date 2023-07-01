@@ -43,11 +43,12 @@ func (handler *Handler) webhookList(w http.ResponseWriter, r *http.Request) *htt
 		return response.JSON(w, []portainer.Webhook{})
 	}
 
-	webhooks, err := handler.DataStore.Webhook().Webhooks()
-	webhooks = filterWebhooks(webhooks, &filters)
+	webhooks, err := handler.DataStore.Webhook().ReadAll()
 	if err != nil {
 		return httperror.InternalServerError("Unable to retrieve webhooks from the database", err)
 	}
+
+	webhooks = filterWebhooks(webhooks, &filters)
 
 	return response.JSON(w, webhooks)
 }

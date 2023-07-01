@@ -8,6 +8,7 @@ import (
 	"github.com/portainer/portainer/api/dataservices"
 	"github.com/portainer/portainer/api/git/update"
 	"github.com/portainer/portainer/api/http/security"
+	"github.com/portainer/portainer/api/stacks/stackutils"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -27,7 +28,7 @@ func (e *StackAuthorMissingErr) Error() string {
 func RedeployWhenChanged(stackID portainer.StackID, deployer StackDeployer, datastore dataservices.DataStore, gitService portainer.GitService) error {
 	log.Debug().Int("stack_id", int(stackID)).Msg("redeploying stack")
 
-	stack, err := datastore.Stack().Stack(stackID)
+	stack, err := datastore.Stack().Read(stackID)
 	if err != nil {
 		return errors.WithMessagef(err, "failed to get the stack %v", stackID)
 	}
@@ -60,7 +61,7 @@ func RedeployWhenChanged(stackID portainer.StackID, deployer StackDeployer, data
 
 	var gitCommitChangedOrForceUpdate bool
 	if !stack.FromAppTemplate {
-		updated, newHash, err := update.UpdateGitObject(gitService, fmt.Sprintf("stack:%d", stackID), stack.GitConfig, false, stack.ProjectPath)
+		updated, newHash, err := update.UpdateGitObject(gitService, fmt.Sprintf("stack:%d", stackID), stack.GitConfig, false, false, stack.ProjectPath)
 		if err != nil {
 			return err
 		}
@@ -83,12 +84,22 @@ func RedeployWhenChanged(stackID portainer.StackID, deployer StackDeployer, data
 
 	switch stack.Type {
 	case portainer.DockerComposeStack:
-		err := deployer.DeployComposeStack(stack, endpoint, registries, true, false)
+
+		if stackutils.IsGitStack(stack) {
+			err = deployer.DeployRemoteComposeStack(stack, endpoint, registries, true, false)
+		} else {
+			err = deployer.DeployComposeStack(stack, endpoint, registries, true, false)
+		}
+
 		if err != nil {
 			return errors.WithMessagef(err, "failed to deploy a docker compose stack %v", stackID)
 		}
 	case portainer.DockerSwarmStack:
-		err := deployer.DeploySwarmStack(stack, endpoint, registries, true, true)
+		if stackutils.IsGitStack(stack) {
+			err = deployer.DeployRemoteSwarmStack(stack, endpoint, registries, true, true)
+		} else {
+			err = deployer.DeploySwarmStack(stack, endpoint, registries, true, true)
+		}
 		if err != nil {
 			return errors.WithMessagef(err, "failed to deploy a docker compose stack %v", stackID)
 		}
@@ -105,7 +116,7 @@ func RedeployWhenChanged(stackID portainer.StackID, deployer StackDeployer, data
 		return errors.Errorf("cannot update stack, type %v is unsupported", stack.Type)
 	}
 
-	if err := datastore.Stack().UpdateStack(stack.ID, stack); err != nil {
+	if err := datastore.Stack().Update(stack.ID, stack); err != nil {
 		return errors.WithMessagef(err, "failed to update the stack %v", stack.ID)
 	}
 
@@ -113,7 +124,7 @@ func RedeployWhenChanged(stackID portainer.StackID, deployer StackDeployer, data
 }
 
 func getUserRegistries(datastore dataservices.DataStore, user *portainer.User, endpointID portainer.EndpointID) ([]portainer.Registry, error) {
-	registries, err := datastore.Registry().Registries()
+	registries, err := datastore.Registry().ReadAll()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to retrieve registries from the database")
 	}

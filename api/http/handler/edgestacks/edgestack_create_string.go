@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/asaskevich/govalidator"
-	"github.com/pkg/errors"
 	"github.com/portainer/libhttp/request"
 	portainer "github.com/portainer/portainer/api"
+	"github.com/portainer/portainer/api/dataservices"
 	"github.com/portainer/portainer/api/filesystem"
 	httperrors "github.com/portainer/portainer/api/http/errors"
+
+	"github.com/asaskevich/govalidator"
+	"github.com/pkg/errors"
 )
 
 type edgeStackFromStringPayload struct {
@@ -20,10 +22,9 @@ type edgeStackFromStringPayload struct {
 	// List of identifiers of EdgeGroups
 	EdgeGroups []portainer.EdgeGroupID `example:"1"`
 	// Deployment type to deploy this stack
-	// Valid values are: 0 - 'compose', 1 - 'kubernetes', 2 - 'nomad'
-	// for compose stacks will use kompose to convert to kubernetes manifest for kubernetes environments(endpoints)
-	// kubernetes deploy type is enabled only for kubernetes environments(endpoints)
-	// nomad deploy type is enabled only for nomad environments(endpoints)
+	// Valid values are: 0 - 'compose', 1 - 'kubernetes'
+	// compose is enabled only for docker environments
+	// kubernetes is enabled only for kubernetes environments
 	DeploymentType portainer.EdgeStackDeploymentType `example:"0" enums:"0,1,2"`
 	// List of Registries to use for this stack
 	Registries []portainer.RegistryID
@@ -35,12 +36,19 @@ func (payload *edgeStackFromStringPayload) Validate(r *http.Request) error {
 	if govalidator.IsNull(payload.Name) {
 		return httperrors.NewInvalidPayloadError("Invalid stack name")
 	}
+
 	if govalidator.IsNull(payload.StackFileContent) {
 		return httperrors.NewInvalidPayloadError("Invalid stack file content")
 	}
+
 	if len(payload.EdgeGroups) == 0 {
 		return httperrors.NewInvalidPayloadError("Edge Groups are mandatory for an Edge stack")
 	}
+
+	if payload.DeploymentType != portainer.EdgeStackDeploymentCompose && payload.DeploymentType != portainer.EdgeStackDeploymentKubernetes {
+		return httperrors.NewInvalidPayloadError("Invalid deployment type")
+	}
+
 	return nil
 }
 
@@ -58,14 +66,14 @@ func (payload *edgeStackFromStringPayload) Validate(r *http.Request) error {
 // @failure 500 "Internal server error"
 // @failure 503 "Edge compute features are disabled"
 // @router /edge_stacks/create/string [post]
-func (handler *Handler) createEdgeStackFromFileContent(r *http.Request, dryrun bool) (*portainer.EdgeStack, error) {
+func (handler *Handler) createEdgeStackFromFileContent(r *http.Request, tx dataservices.DataStoreTx, dryrun bool) (*portainer.EdgeStack, error) {
 	var payload edgeStackFromStringPayload
 	err := request.DecodeAndValidateJSONPayload(r, &payload)
 	if err != nil {
 		return nil, err
 	}
 
-	stack, err := handler.edgeStacksService.BuildEdgeStack(payload.Name, payload.DeploymentType, payload.EdgeGroups, payload.Registries, payload.UseManifestNamespaces)
+	stack, err := handler.edgeStacksService.BuildEdgeStack(tx, payload.Name, payload.DeploymentType, payload.EdgeGroups, payload.Registries, payload.UseManifestNamespaces)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create Edge stack object")
 	}
@@ -74,13 +82,20 @@ func (handler *Handler) createEdgeStackFromFileContent(r *http.Request, dryrun b
 		return stack, nil
 	}
 
-	return handler.edgeStacksService.PersistEdgeStack(stack, func(stackFolder string, relatedEndpointIds []portainer.EndpointID) (composePath string, manifestPath string, projectPath string, err error) {
-		return handler.storeFileContent(stackFolder, payload.DeploymentType, relatedEndpointIds, []byte(payload.StackFileContent))
+	return handler.edgeStacksService.PersistEdgeStack(tx, stack, func(stackFolder string, relatedEndpointIds []portainer.EndpointID) (composePath string, manifestPath string, projectPath string, err error) {
+		return handler.storeFileContent(tx, stackFolder, payload.DeploymentType, relatedEndpointIds, []byte(payload.StackFileContent))
 	})
-
 }
 
-func (handler *Handler) storeFileContent(stackFolder string, deploymentType portainer.EdgeStackDeploymentType, relatedEndpointIds []portainer.EndpointID, fileContent []byte) (composePath, manifestPath, projectPath string, err error) {
+func (handler *Handler) storeFileContent(tx dataservices.DataStoreTx, stackFolder string, deploymentType portainer.EdgeStackDeploymentType, relatedEndpointIds []portainer.EndpointID, fileContent []byte) (composePath, manifestPath, projectPath string, err error) {
+	hasWrongType, err := hasWrongEnvironmentType(tx.Endpoint(), relatedEndpointIds, deploymentType)
+	if err != nil {
+		return "", "", "", fmt.Errorf("unable to check for existence of non fitting environments: %w", err)
+	}
+	if hasWrongType {
+		return "", "", "", fmt.Errorf("edge stack with config do not match the environment type")
+	}
+
 	if deploymentType == portainer.EdgeStackDeploymentCompose {
 		composePath = filesystem.ComposeFileDefaultName
 
@@ -89,22 +104,7 @@ func (handler *Handler) storeFileContent(stackFolder string, deploymentType port
 			return "", "", "", err
 		}
 
-		manifestPath, err = handler.convertAndStoreKubeManifestIfNeeded(stackFolder, projectPath, composePath, relatedEndpointIds)
-		if err != nil {
-			return "", "", "", fmt.Errorf("Failed creating and storing kube manifest: %w", err)
-		}
-
-		return composePath, manifestPath, projectPath, nil
-
-	}
-
-	hasDockerEndpoint, err := hasDockerEndpoint(handler.DataStore.Endpoint(), relatedEndpointIds)
-	if err != nil {
-		return "", "", "", fmt.Errorf("unable to check for existence of docker environment: %w", err)
-	}
-
-	if hasDockerEndpoint {
-		return "", "", "", errors.New("edge stack with docker environment cannot be deployed with kubernetes or nomad config")
+		return composePath, "", projectPath, nil
 	}
 
 	if deploymentType == portainer.EdgeStackDeploymentKubernetes {

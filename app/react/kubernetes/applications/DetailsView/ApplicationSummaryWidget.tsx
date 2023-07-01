@@ -1,6 +1,6 @@
-import { User, Clock, Edit, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, Clock, Edit, ChevronRight, ChevronUp } from 'lucide-react';
 import moment from 'moment';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pod } from 'kubernetes-types/core/v1';
 import { useCurrentStateAndParams } from '@uirouter/react';
 
@@ -32,7 +32,7 @@ import {
   useApplication,
   usePatchApplicationMutation,
 } from '../application.queries';
-import { Application } from '../types';
+import { Application, ApplicationPatch } from '../types';
 
 export function ApplicationSummaryWidget() {
   const stateAndParams = useCurrentStateAndParams();
@@ -60,9 +60,13 @@ export function ApplicationSummaryWidget() {
     application?.metadata?.annotations?.[appNoteAnnotation];
 
   const [isNoteOpen, setIsNoteOpen] = useState(true);
-  const [applicationNoteFormValues, setApplicationNoteFormValues] = useState(
-    applicationNote || ''
-  );
+  const [applicationNoteFormValues, setApplicationNoteFormValues] =
+    useState('');
+
+  useEffect(() => {
+    setApplicationNoteFormValues(applicationNote || '');
+  }, [applicationNote]);
+
   const patchApplicationMutation = usePatchApplicationMutation(
     environmentId,
     namespace,
@@ -193,16 +197,16 @@ export function ApplicationSummaryWidget() {
             <form className="form-horizontal">
               <div className="form-group">
                 <div className="col-sm-12 vertical-center">
-                  <Edit /> Note
                   <Button
-                    size="xsmall"
+                    size="small"
                     type="button"
-                    color="light"
+                    color="none"
                     data-cy="k8sAppDetail-expandNoteButton"
                     onClick={() => setIsNoteOpen(!isNoteOpen)}
+                    className="!m-0 !p-0"
                   >
-                    {isNoteOpen ? 'Collapse' : 'Expand'}
-                    {isNoteOpen ? <ChevronUp /> : <ChevronDown />}
+                    {isNoteOpen ? <ChevronUp /> : <ChevronRight />} <Edit />{' '}
+                    Note
                   </Button>
                 </div>
               </div>
@@ -259,14 +263,18 @@ export function ApplicationSummaryWidget() {
   );
 
   async function patchApplicationNote() {
-    const path = `/metadata/annotations/${appNoteAnnotation}`;
-    const value = applicationNoteFormValues;
+    const patch: ApplicationPatch = [
+      {
+        op: 'replace',
+        path: `/metadata/annotations/${appNoteAnnotation}`,
+        value: applicationNoteFormValues,
+      },
+    ];
     if (application?.kind) {
       try {
         await patchApplicationMutation.mutateAsync({
           appKind: application.kind,
-          path,
-          value,
+          patch,
         });
         notifySuccess('Success', 'Application successfully updated');
       } catch (error) {

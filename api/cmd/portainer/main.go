@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	libstack "github.com/portainer/docker-compose-wrapper"
-	"github.com/portainer/docker-compose-wrapper/compose"
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/apikey"
 	"github.com/portainer/portainer/api/build"
@@ -24,6 +22,7 @@ import (
 	"github.com/portainer/portainer/api/datastore"
 	"github.com/portainer/portainer/api/demo"
 	"github.com/portainer/portainer/api/docker"
+	dockerclient "github.com/portainer/portainer/api/docker/client"
 	"github.com/portainer/portainer/api/exec"
 	"github.com/portainer/portainer/api/filesystem"
 	"github.com/portainer/portainer/api/git"
@@ -47,6 +46,8 @@ import (
 	"github.com/portainer/portainer/api/stacks/deployments"
 	"github.com/portainer/portainer/pkg/featureflags"
 	"github.com/portainer/portainer/pkg/libhelm"
+	"github.com/portainer/portainer/pkg/libstack"
+	"github.com/portainer/portainer/pkg/libstack/compose"
 
 	"github.com/gofrs/uuid"
 	"github.com/rs/zerolog/log"
@@ -233,8 +234,8 @@ func initSSLService(addr, certPath, keyPath string, fileService portainer.FileSe
 	return sslService, nil
 }
 
-func initDockerClientFactory(signatureService portainer.DigitalSignatureService, reverseTunnelService portainer.ReverseTunnelService) *docker.ClientFactory {
-	return docker.NewClientFactory(signatureService, reverseTunnelService)
+func initDockerClientFactory(signatureService portainer.DigitalSignatureService, reverseTunnelService portainer.ReverseTunnelService) *dockerclient.ClientFactory {
+	return dockerclient.NewClientFactory(signatureService, reverseTunnelService)
 }
 
 func initKubernetesClientFactory(signatureService portainer.DigitalSignatureService, reverseTunnelService portainer.ReverseTunnelService, dataStore dataservices.DataStore, instanceID, addrHTTPS, userSessionTimeout string) (*kubecli.ClientFactory, error) {
@@ -244,7 +245,7 @@ func initKubernetesClientFactory(signatureService portainer.DigitalSignatureServ
 func initSnapshotService(
 	snapshotIntervalFromFlag string,
 	dataStore dataservices.DataStore,
-	dockerClientFactory *docker.ClientFactory,
+	dockerClientFactory *dockerclient.ClientFactory,
 	kubernetesClientFactory *kubecli.ClientFactory,
 	shutdownCtx context.Context,
 ) (portainer.SnapshotService, error) {
@@ -538,7 +539,7 @@ func buildServer(flags *portainer.CLIFlags) portainer.Server {
 	}
 
 	scheduler := scheduler.NewScheduler(shutdownCtx)
-	stackDeployer := deployments.NewStackDeployer(swarmStackManager, composeStackManager, kubernetesDeployer)
+	stackDeployer := deployments.NewStackDeployer(swarmStackManager, composeStackManager, kubernetesDeployer, dockerClientFactory, dataStore)
 	deployments.StartStackSchedules(scheduler, stackDeployer, dataStore, gitService)
 
 	sslDBSettings, err := dataStore.SSLSettings().Settings()

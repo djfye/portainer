@@ -5,15 +5,30 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	httperror "github.com/portainer/libhttp/error"
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/apikey"
 	"github.com/portainer/portainer/api/dataservices"
 	httperrors "github.com/portainer/portainer/api/http/errors"
+
+	"github.com/pkg/errors"
 )
 
 type (
+	BouncerService interface {
+		PublicAccess(http.Handler) http.Handler
+		AdminAccess(http.Handler) http.Handler
+		RestrictedAccess(http.Handler) http.Handler
+		TeamLeaderAccess(http.Handler) http.Handler
+		AuthenticatedAccess(http.Handler) http.Handler
+		EdgeComputeOperation(http.Handler) http.Handler
+
+		AuthorizedEndpointOperation(*http.Request, *portainer.Endpoint) error
+		AuthorizedEdgeEndpointOperation(*http.Request, *portainer.Endpoint) error
+		TrustedEdgeEnvironmentAccess(dataservices.DataStoreTx, *portainer.Endpoint) error
+		JWTAuthLookup(*http.Request) *portainer.TokenData
+	}
+
 	// RequestBouncer represents an entity that manages API request accesses
 	RequestBouncer struct {
 		dataStore     dataservices.DataStore
@@ -119,7 +134,7 @@ func (bouncer *RequestBouncer) AuthorizedEndpointOperation(r *http.Request, endp
 		return err
 	}
 
-	group, err := bouncer.dataStore.EndpointGroup().EndpointGroup(endpoint.GroupID)
+	group, err := bouncer.dataStore.EndpointGroup().Read(endpoint.GroupID)
 	if err != nil {
 		return err
 	}
@@ -151,12 +166,12 @@ func (bouncer *RequestBouncer) AuthorizedEdgeEndpointOperation(r *http.Request, 
 
 // TrustedEdgeEnvironmentAccess defines a security check for Edge environments, checks if
 // the request is coming from a trusted Edge environment
-func (bouncer *RequestBouncer) TrustedEdgeEnvironmentAccess(endpoint *portainer.Endpoint) error {
+func (bouncer *RequestBouncer) TrustedEdgeEnvironmentAccess(tx dataservices.DataStoreTx, endpoint *portainer.Endpoint) error {
 	if endpoint.UserTrusted {
 		return nil
 	}
 
-	settings, err := bouncer.dataStore.Settings().Settings()
+	settings, err := tx.Settings().Settings()
 	if err != nil {
 		return errors.WithMessage(err, "could not retrieve the settings")
 	}
@@ -202,7 +217,7 @@ func (bouncer *RequestBouncer) mwCheckPortainerAuthorizations(next http.Handler,
 			return
 		}
 
-		_, err = bouncer.dataStore.User().User(tokenData.ID)
+		_, err = bouncer.dataStore.User().Read(tokenData.ID)
 		if bouncer.dataStore.IsErrObjectNotFound(err) {
 			httperror.WriteError(w, http.StatusUnauthorized, "Unauthorized", httperrors.ErrUnauthorized)
 			return
@@ -273,7 +288,7 @@ func (bouncer *RequestBouncer) mwAuthenticateFirst(tokenLookups []tokenLookup, n
 			return
 		}
 
-		_, err := bouncer.dataStore.User().User(token.ID)
+		_, err := bouncer.dataStore.User().Read(token.ID)
 		if err != nil && bouncer.dataStore.IsErrObjectNotFound(err) {
 			httperror.WriteError(w, http.StatusUnauthorized, "Unauthorized", httperrors.ErrUnauthorized)
 			return

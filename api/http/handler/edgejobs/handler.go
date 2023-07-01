@@ -1,6 +1,7 @@
 package edgejobs
 
 import (
+	"errors"
 	"net/http"
 
 	httperror "github.com/portainer/libhttp/error"
@@ -21,7 +22,7 @@ type Handler struct {
 }
 
 // NewHandler creates a handler to manage Edge job operations.
-func NewHandler(bouncer *security.RequestBouncer) *Handler {
+func NewHandler(bouncer security.BouncerService) *Handler {
 	h := &Handler{
 		Router: mux.NewRouter(),
 	}
@@ -62,8 +63,9 @@ func convertEndpointsToMetaObject(endpoints []portainer.EndpointID) map[portaine
 
 func txResponse(w http.ResponseWriter, r any, err error) *httperror.HandlerError {
 	if err != nil {
-		if httpErr, ok := err.(*httperror.HandlerError); ok {
-			return httpErr
+		var handlerError *httperror.HandlerError
+		if errors.As(err, &handlerError) {
+			return handlerError
 		}
 
 		return httperror.InternalServerError("Unexpected error", err)

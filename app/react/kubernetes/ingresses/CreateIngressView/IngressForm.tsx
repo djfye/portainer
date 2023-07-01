@@ -11,6 +11,7 @@ import { Widget, WidgetBody, WidgetTitle } from '@@/Widget';
 import { Tooltip } from '@@/Tip/Tooltip';
 import { Button } from '@@/buttons';
 import { TooltipWithChildren } from '@@/Tip/TooltipWithChildren';
+import { TextTip } from '@@/Tip/TextTip';
 
 import { Annotations } from './Annotations';
 import { Rule, ServicePorts } from './types';
@@ -307,16 +308,6 @@ export function IngressForm({
                     {!host.NoHost ? 'Rule' : 'Fallback rule'}
                   </div>
                   <div className="col-sm-9 p-0 text-right">
-                    {!host.NoHost && (
-                      <Button
-                        className="btn btn-light btn-sm"
-                        onClick={() => reloadTLSCerts()}
-                        icon={RefreshCw}
-                      >
-                        Reload TLS secrets
-                      </Button>
-                    )}
-
                     <Button
                       className="btn btn-sm ml-2"
                       color="dangerlight"
@@ -366,31 +357,38 @@ export function IngressForm({
                             handleTLSChange(hostIndex, e.target.value)
                           }
                           defaultValue={host.Secret}
+                          className="!rounded-r-none"
                         />
+                        {!host.NoHost && (
+                          <div className="input-group-btn">
+                            <Button
+                              className="btn btn-light btn-sm !ml-0 !rounded-l-none"
+                              onClick={() => reloadTLSCerts()}
+                              icon={RefreshCw}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <p className="vertical-center text-muted small col-sm-12 whitespace-nowrap !p-0">
-                      <Icon icon={Info} mode="primary" size="md" />
-                      <span>
-                        Add a secret via{' '}
+                    <div className="col-sm-12 col-lg-4 flex h-[30px] items-center pl-2">
+                      <TextTip color="blue">
+                        You may also use the{' '}
                         <Link
-                          to="kubernetes.configurations"
+                          to="kubernetes.secrets.new"
                           params={{ id: environmentID }}
                           className="text-primary"
                           target="_blank"
                         >
-                          ConfigMaps &amp; Secrets
-                        </Link>
-                        {', '}
-                        then select &apos;Reload TLS secrets&apos; above to
-                        populate the dropdown with your changes.
-                      </span>
-                    </p>
+                          Create secret
+                        </Link>{' '}
+                        function, and reload the dropdown.
+                      </TextTip>
+                    </div>
                   </div>
                 )}
                 {host.NoHost && (
-                  <p className="vertical-center text-muted small col-sm-12 whitespace-nowrap !p-0">
+                  <p className="vertical-center text-muted small col-sm-12 !p-0">
                     <Icon icon={Info} mode="primary" size="md" />A fallback rule
                     has no host specified. This rule only applies when an
                     inbound request has a hostname that does not match with any
@@ -403,6 +401,16 @@ export function IngressForm({
                     Paths
                   </div>
                 </div>
+
+                {!host.Paths.length && (
+                  <p className="small text-muted vertical-center mt-4 gap-1">
+                    <Icon icon={Info} mode="primary" size="md" />
+                    You may save the ingress without a path and it will then be
+                    an <b>ingress default</b> that a user may select via the
+                    hostname dropdown in Create/Edit application.
+                  </p>
+                )}
+
                 {host.Paths.map((path, pathIndex) => (
                   <div
                     className="row path mt-5 !mb-5"
@@ -561,13 +569,14 @@ export function IngressForm({
 
                     <div className="form-group col-sm-1 !m-0 !pl-0">
                       <Button
-                        className="btn btn-sm btn-only-icon vertical-center !ml-0"
+                        className="btn-only-icon vertical-center !ml-0"
                         color="dangerlight"
                         type="button"
                         data-cy={`k8sAppCreate-rmPortButton_${hostIndex}-${pathIndex}`}
                         onClick={() => removeIngressRoute(hostIndex, pathIndex)}
-                        disabled={host.Paths.length === 1}
                         icon={Trash2}
+                        size="small"
+                        disabled={host.Paths.length === 1 && host.NoHost}
                       />
                     </div>
                   </div>
@@ -575,10 +584,12 @@ export function IngressForm({
 
                 <div className="row mt-5">
                   <Button
-                    className="btn btn-sm btn-light !ml-0"
+                    className="!ml-0"
                     type="button"
                     onClick={() => addNewIngressRoute(hostIndex)}
                     icon={Plus}
+                    size="small"
+                    color="default"
                   >
                     Add path
                   </Button>
@@ -591,20 +602,24 @@ export function IngressForm({
           <div className="row rules-action p-0">
             <div className="col-sm-12 vertical-center p-0">
               <Button
-                className="btn btn-sm btn-light !ml-0"
+                className="!ml-0"
                 type="button"
                 onClick={() => addNewIngressHost()}
                 icon={Plus}
+                color="default"
+                size="small"
               >
                 Add new host
               </Button>
 
               <Button
-                className="btn btn-sm btn-light ml-2"
+                className="ml-2"
                 type="button"
                 onClick={() => addNewIngressHost(true)}
                 disabled={hasNoHostRule}
                 icon={Plus}
+                color="default"
+                size="small"
               >
                 Add fallback rule
               </Button>

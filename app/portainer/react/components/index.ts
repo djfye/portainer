@@ -5,7 +5,15 @@ import { withCurrentUser } from '@/react-tools/withCurrentUser';
 import { withReactQuery } from '@/react-tools/withReactQuery';
 import { withUIRouter } from '@/react-tools/withUIRouter';
 import { AnnotationsBeTeaser } from '@/react/kubernetes/annotations/AnnotationsBeTeaser';
+import { withFormValidation } from '@/react-tools/withFormValidation';
+import { GroupAssociationTable } from '@/react/portainer/environments/environment-groups/components/GroupAssociationTable';
+import { AssociatedEnvironmentsSelector } from '@/react/portainer/environments/environment-groups/components/AssociatedEnvironmentsSelector';
 
+import {
+  EnvironmentVariablesFieldset,
+  EnvironmentVariablesPanel,
+  envVarValidation,
+} from '@@/form-components/EnvironmentVariablesFieldset';
 import { Icon } from '@@/Icon';
 import { ReactQueryDevtoolsWrapper } from '@@/ReactQueryDevtoolsWrapper';
 import { PageHeader } from '@@/PageHeader';
@@ -37,7 +45,7 @@ import { environmentsModule } from './environments';
 import { envListModule } from './environments-list-view-components';
 import { registriesModule } from './registries';
 
-export const componentsModule = angular
+export const ngModule = angular
   .module('portainer.app.react.components', [
     accessControlModule,
     customTemplatesModule,
@@ -121,6 +129,7 @@ export const componentsModule = angular
       'type',
       'value',
       'to',
+      'params',
       'children',
       'pluralType',
       'isLoading',
@@ -189,10 +198,44 @@ export const componentsModule = angular
       'id',
       'placeholder',
       'yaml',
+      'dockerFile',
+      'shell',
       'readonly',
       'onChange',
       'value',
       'height',
     ])
   )
-  .component('annotationsBeTeaser', r2a(AnnotationsBeTeaser, [])).name;
+  .component(
+    'groupAssociationTable',
+    r2a(withReactQuery(GroupAssociationTable), [
+      'emptyContentLabel',
+      'onClickRow',
+      'query',
+      'title',
+      'data-cy',
+    ])
+  )
+  .component('annotationsBeTeaser', r2a(AnnotationsBeTeaser, []))
+  .component(
+    'associatedEndpointsSelector',
+    r2a(withReactQuery(AssociatedEnvironmentsSelector), ['onChange', 'value'])
+  );
+
+export const componentsModule = ngModule.name;
+
+withFormValidation(
+  ngModule,
+  EnvironmentVariablesFieldset,
+  'environmentVariablesFieldset',
+  [],
+  envVarValidation
+);
+
+withFormValidation(
+  ngModule,
+  EnvironmentVariablesPanel,
+  'environmentVariablesPanel',
+  ['explanation', 'showHelpMessage'],
+  envVarValidation
+);

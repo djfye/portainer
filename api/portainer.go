@@ -176,7 +176,7 @@ type (
 		// Valid values are: 1 - 'linux', 2 - 'windows'
 		Platform CustomTemplatePlatform `json:"Platform" example:"1" enums:"1,2"`
 		// URL of the template's logo
-		Logo string `json:"Logo" example:"https://cloudinovasi.id/assets/img/logos/nginx.png"`
+		Logo string `json:"Logo" example:"https://portainer.io/img/logo.svg"`
 		// Type of created stack:
 		// * 1 - swarm
 		// * 2 - compose
@@ -299,6 +299,12 @@ type (
 		Endpoints      []EndpointID `json:"Endpoints"`
 	}
 
+	// StackDeploymentInfo records the information of a deployed stack
+	StackDeploymentInfo struct {
+		Version    int    `json:"Version"`
+		ConfigHash string `json:"ConfigHash"`
+	}
+
 	//EdgeStack represents an edge stack
 	EdgeStack struct {
 		// EdgeStack Identifier
@@ -340,6 +346,8 @@ type (
 		Details    EdgeStackStatusDetails `json:"Details"`
 		Error      string                 `json:"Error"`
 		EndpointID EndpointID             `json:"EndpointID"`
+		// EE only feature
+		DeploymentInfo StackDeploymentInfo `json:"DeploymentInfo"`
 
 		// Deprecated
 		Type EdgeStackStatusType `json:"Type"`
@@ -967,6 +975,8 @@ type (
 		AllowStackManagementForRegularUsers       bool `json:"AllowStackManagementForRegularUsers"`
 		AllowDeviceMappingForRegularUsers         bool `json:"AllowDeviceMappingForRegularUsers"`
 		AllowContainerCapabilitiesForRegularUsers bool `json:"AllowContainerCapabilitiesForRegularUsers"`
+
+		IsDockerDesktopExtension bool `json:"IsDockerDesktopExtension"`
 	}
 
 	// SnapshotJob represents a scheduled job that can create environment(endpoint) snapshots
@@ -1015,7 +1025,7 @@ type (
 		UpdatedBy string `example:"bob"`
 		// Only applies when deploying stack with multiple files
 		AdditionalFiles []string `json:"AdditionalFiles"`
-		// The auto update settings of a git stack
+		// The GitOps update settings of a git stack
 		AutoUpdate *AutoUpdateSettings `json:"AutoUpdate"`
 		// The stack deployment option
 		Option *StackOption `json:"Option"`
@@ -1132,7 +1142,7 @@ type (
 		// Default name for the stack/container to be used on deployment
 		Name string `json:"name,omitempty" example:"mystackname"`
 		// URL of the template's logo
-		Logo string `json:"logo,omitempty" example:"https://cloudinovasi.id/assets/img/logos/nginx.png"`
+		Logo string `json:"logo,omitempty" example:"https://portainer.io/img/logo.svg"`
 		// A list of environment(endpoint) variables used during the template deployment
 		Env []TemplateEnv `json:"env,omitempty"`
 		// A note that will be displayed in the UI. Supports HTML content
@@ -1304,11 +1314,12 @@ type (
 	// Webhook represents a url webhook that can be used to update a service
 	Webhook struct {
 		// Webhook Identifier
-		ID          WebhookID   `json:"Id" example:"1"`
-		Token       string      `json:"Token"`
-		ResourceID  string      `json:"ResourceId"`
-		EndpointID  EndpointID  `json:"EndpointId"`
-		RegistryID  RegistryID  `json:"RegistryId"`
+		ID         WebhookID  `json:"Id" example:"1"`
+		Token      string     `json:"Token"`
+		ResourceID string     `json:"ResourceId"`
+		EndpointID EndpointID `json:"EndpointId"`
+		RegistryID RegistryID `json:"RegistryId"`
+		// Type of webhook (1 - service)
 		WebhookType WebhookType `json:"Type"`
 	}
 
@@ -1334,7 +1345,7 @@ type (
 	ComposeStackManager interface {
 		ComposeSyntaxMaxVersion() string
 		NormalizeStackName(name string) string
-		Up(ctx context.Context, stack *Stack, endpoint *Endpoint, forceRereate bool) error
+		Up(ctx context.Context, stack *Stack, endpoint *Endpoint, forceRecreate bool) error
 		Down(ctx context.Context, stack *Stack, endpoint *Endpoint) error
 		Pull(ctx context.Context, stack *Stack, endpoint *Endpoint) error
 	}
@@ -1377,6 +1388,10 @@ type (
 		RollbackStackFile(stackIdentifier, fileName string) error
 		GetEdgeStackProjectPath(edgeStackIdentifier string) string
 		StoreEdgeStackFileFromBytes(edgeStackIdentifier, fileName string, data []byte) (string, error)
+		GetEdgeStackProjectPathByVersion(edgeStackIdentifier string, version int, commitHash string) string
+		StoreEdgeStackFileFromBytesByVersion(edgeStackIdentifier, fileName string, version int, data []byte) (string, error)
+		FormProjectPathByVersion(projectIdentifier string, version int, commitHash string) string
+		SafeMoveDirectory(src, dst string) error
 		StoreRegistryManagementFileFromBytes(folder, fileName string, data []byte) (string, error)
 		KeyPairFilesExist() (bool, error)
 		StoreKeyPair(private, public []byte, privatePEMHeader, publicPEMHeader string) error

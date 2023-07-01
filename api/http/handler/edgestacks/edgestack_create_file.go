@@ -3,10 +3,12 @@ package edgestacks
 import (
 	"net/http"
 
-	"github.com/pkg/errors"
 	"github.com/portainer/libhttp/request"
 	portainer "github.com/portainer/portainer/api"
+	"github.com/portainer/portainer/api/dataservices"
 	httperrors "github.com/portainer/portainer/api/http/errors"
+
+	"github.com/pkg/errors"
 )
 
 type edgeStackFromFileUploadPayload struct {
@@ -14,11 +16,10 @@ type edgeStackFromFileUploadPayload struct {
 	StackFileContent []byte
 	EdgeGroups       []portainer.EdgeGroupID
 	// Deployment type to deploy this stack
-	// Valid values are: 0 - 'compose', 1 - 'kubernetes', 2 - 'nomad'
-	// for compose stacks will use kompose to convert to kubernetes manifest for kubernetes environments(endpoints)
-	// kubernetes deploytype is enabled only for kubernetes environments(endpoints)
-	// nomad deploytype is enabled only for nomad environments(endpoints)
-	DeploymentType portainer.EdgeStackDeploymentType `example:"0" enums:"0,1,2"`
+	// Valid values are: 0 - 'compose', 1 - 'kubernetes'
+	// compose is enabled only for docker environments
+	// kubernetes is enabled only for kubernetes environments
+	DeploymentType portainer.EdgeStackDeploymentType `example:"0" enums:"0,1"`
 	Registries     []portainer.RegistryID
 	// Uses the manifest's namespaces instead of the default one
 	UseManifestNamespaces bool
@@ -49,6 +50,9 @@ func (payload *edgeStackFromFileUploadPayload) Validate(r *http.Request) error {
 		return httperrors.NewInvalidPayloadError("Invalid deployment type")
 	}
 	payload.DeploymentType = portainer.EdgeStackDeploymentType(deploymentType)
+	if payload.DeploymentType != portainer.EdgeStackDeploymentCompose && payload.DeploymentType != portainer.EdgeStackDeploymentKubernetes {
+		return httperrors.NewInvalidPayloadError("Invalid deployment type")
+	}
 
 	var registries []portainer.RegistryID
 	err = request.RetrieveMultiPartFormJSONValue(r, "Registries", &registries, true)
@@ -85,14 +89,14 @@ func (payload *edgeStackFromFileUploadPayload) Validate(r *http.Request) error {
 // @failure 500 "Internal server error"
 // @failure 503 "Edge compute features are disabled"
 // @router /edge_stacks/create/file [post]
-func (handler *Handler) createEdgeStackFromFileUpload(r *http.Request, dryrun bool) (*portainer.EdgeStack, error) {
+func (handler *Handler) createEdgeStackFromFileUpload(r *http.Request, tx dataservices.DataStoreTx, dryrun bool) (*portainer.EdgeStack, error) {
 	payload := &edgeStackFromFileUploadPayload{}
 	err := payload.Validate(r)
 	if err != nil {
 		return nil, err
 	}
 
-	stack, err := handler.edgeStacksService.BuildEdgeStack(payload.Name, payload.DeploymentType, payload.EdgeGroups, payload.Registries, payload.UseManifestNamespaces)
+	stack, err := handler.edgeStacksService.BuildEdgeStack(tx, payload.Name, payload.DeploymentType, payload.EdgeGroups, payload.Registries, payload.UseManifestNamespaces)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create edge stack object")
 	}
@@ -101,7 +105,7 @@ func (handler *Handler) createEdgeStackFromFileUpload(r *http.Request, dryrun bo
 		return stack, nil
 	}
 
-	return handler.edgeStacksService.PersistEdgeStack(stack, func(stackFolder string, relatedEndpointIds []portainer.EndpointID) (composePath string, manifestPath string, projectPath string, err error) {
-		return handler.storeFileContent(stackFolder, payload.DeploymentType, relatedEndpointIds, payload.StackFileContent)
+	return handler.edgeStacksService.PersistEdgeStack(tx, stack, func(stackFolder string, relatedEndpointIds []portainer.EndpointID) (composePath string, manifestPath string, projectPath string, err error) {
+		return handler.storeFileContent(tx, stackFolder, payload.DeploymentType, relatedEndpointIds, payload.StackFileContent)
 	})
 }

@@ -2,24 +2,26 @@ package customtemplates
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/asaskevich/govalidator"
 	httperror "github.com/portainer/libhttp/error"
 	"github.com/portainer/libhttp/request"
 	"github.com/portainer/libhttp/response"
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/filesystem"
+	"github.com/portainer/portainer/api/git"
 	gittypes "github.com/portainer/portainer/api/git/types"
 	httperrors "github.com/portainer/portainer/api/http/errors"
 	"github.com/portainer/portainer/api/http/security"
-	"github.com/portainer/portainer/api/stacks/stackutils"
+
+	"github.com/asaskevich/govalidator"
 )
 
 type customTemplateUpdatePayload struct {
 	// URL of the template's logo
-	Logo string `example:"https://cloudinovasi.id/assets/img/logos/nginx.png"`
+	Logo string `example:"https://portainer.io/img/logo.svg"`
 	// Title of the template
 	Title string `example:"Nginx" validate:"required"`
 	// Description of the template
@@ -53,6 +55,8 @@ type customTemplateUpdatePayload struct {
 	FileContent string `validate:"required"`
 	// Definitions of variables in the stack file
 	Variables []portainer.CustomTemplateVariableDefinition
+	// TLSSkipVerify skips SSL verification when cloning the Git repository
+	TLSSkipVerify bool `example:"false"`
 	// IsComposeFormat indicates if the Kubernetes template is created from a Docker Compose file
 	IsComposeFormat bool `example:"false"`
 }
@@ -121,7 +125,7 @@ func (handler *Handler) customTemplateUpdate(w http.ResponseWriter, r *http.Requ
 		return httperror.BadRequest("Invalid request payload", err)
 	}
 
-	customTemplates, err := handler.DataStore.CustomTemplate().CustomTemplates()
+	customTemplates, err := handler.DataStore.CustomTemplate().ReadAll()
 	if err != nil {
 		return httperror.InternalServerError("Unable to retrieve custom templates from the database", err)
 	}
@@ -132,7 +136,7 @@ func (handler *Handler) customTemplateUpdate(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	customTemplate, err := handler.DataStore.CustomTemplate().CustomTemplate(portainer.CustomTemplateID(customTemplateID))
+	customTemplate, err := handler.DataStore.CustomTemplate().Read(portainer.CustomTemplateID(customTemplateID))
 	if handler.DataStore.IsErrObjectNotFound(err) {
 		return httperror.NotFound("Unable to find a custom template with the specified identifier inside the database", err)
 	} else if err != nil {
@@ -167,20 +171,37 @@ func (handler *Handler) customTemplateUpdate(w http.ResponseWriter, r *http.Requ
 			URL:            payload.RepositoryURL,
 			ReferenceName:  payload.RepositoryReferenceName,
 			ConfigFilePath: payload.ComposeFilePathInRepository,
+			TLSSkipVerify:  payload.TLSSkipVerify,
 		}
 
+		repositoryUsername := ""
+		repositoryPassword := ""
 		if payload.RepositoryAuthentication {
+			repositoryUsername = payload.RepositoryUsername
+			repositoryPassword = payload.RepositoryPassword
 			gitConfig.Authentication = &gittypes.GitAuthentication{
 				Username: payload.RepositoryUsername,
 				Password: payload.RepositoryPassword,
 			}
 		}
 
-		commitHash, err := stackutils.DownloadGitRepository(*gitConfig, handler.GitService, func() string {
-			return customTemplate.ProjectPath
+		cleanBackup, err := git.CloneWithBackup(handler.GitService, handler.FileService, git.CloneOptions{
+			ProjectPath:   customTemplate.ProjectPath,
+			URL:           gitConfig.URL,
+			ReferenceName: gitConfig.ReferenceName,
+			Username:      repositoryUsername,
+			Password:      repositoryPassword,
+			TLSSkipVerify: gitConfig.TLSSkipVerify,
 		})
 		if err != nil {
-			return httperror.InternalServerError(err.Error(), err)
+			return httperror.InternalServerError("Unable to clone git repository directory", err)
+		}
+
+		defer cleanBackup()
+
+		commitHash, err := handler.GitService.LatestCommitID(gitConfig.URL, gitConfig.ReferenceName, repositoryUsername, repositoryPassword, gitConfig.TLSSkipVerify)
+		if err != nil {
+			return httperror.InternalServerError("Unable get latest commit id", fmt.Errorf("failed to fetch latest commit id of the template %v: %w", customTemplate.ID, err))
 		}
 
 		gitConfig.ConfigHash = commitHash
@@ -193,7 +214,7 @@ func (handler *Handler) customTemplateUpdate(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	err = handler.DataStore.CustomTemplate().UpdateCustomTemplate(customTemplate.ID, customTemplate)
+	err = handler.DataStore.CustomTemplate().Update(customTemplate.ID, customTemplate)
 	if err != nil {
 		return httperror.InternalServerError("Unable to persist custom template changes inside the database", err)
 	}

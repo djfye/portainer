@@ -14,6 +14,7 @@ import (
 	"github.com/portainer/portainer/api/dataservices"
 	"github.com/portainer/portainer/api/demo"
 	"github.com/portainer/portainer/api/docker"
+	dockerclient "github.com/portainer/portainer/api/docker/client"
 	"github.com/portainer/portainer/api/http/handler"
 	"github.com/portainer/portainer/api/http/handler/auth"
 	"github.com/portainer/portainer/api/http/handler/backup"
@@ -96,7 +97,7 @@ type Server struct {
 	KubeClusterAccessService    k8s.KubeClusterAccessService
 	Handler                     *handler.Handler
 	SSLService                  *ssl.Service
-	DockerClientFactory         *docker.ClientFactory
+	DockerClientFactory         *dockerclient.ClientFactory
 	KubernetesClientFactory     *cli.ClientFactory
 	KubernetesDeployer          portainer.KubernetesDeployer
 	HelmPackageManager          libhelm.HelmPackageManager
@@ -189,7 +190,9 @@ func (server *Server) Start() error {
 
 	var kubernetesHandler = kubehandler.NewHandler(requestBouncer, server.AuthorizationService, server.DataStore, server.JWTService, server.KubeClusterAccessService, server.KubernetesClientFactory, nil)
 
-	var dockerHandler = dockerhandler.NewHandler(requestBouncer, server.AuthorizationService, server.DataStore, server.DockerClientFactory)
+	containerService := docker.NewContainerService(server.DockerClientFactory, server.DataStore)
+
+	var dockerHandler = dockerhandler.NewHandler(requestBouncer, server.AuthorizationService, server.DataStore, server.DockerClientFactory, containerService)
 
 	var fileHandler = file.NewHandler(filepath.Join(server.AssetsPath, "public"), adminMonitor.WasInstanceDisabled)
 
@@ -272,6 +275,7 @@ func (server *Server) Start() error {
 	var userHandler = users.NewHandler(requestBouncer, rateLimiter, server.APIKeyService, server.DemoService, passwordStrengthChecker)
 	userHandler.DataStore = server.DataStore
 	userHandler.CryptoService = server.CryptoService
+	userHandler.AdminCreationDone = server.AdminCreationDone
 
 	var websocketHandler = websocket.NewHandler(server.KubernetesTokenCacheManager, requestBouncer)
 	websocketHandler.DataStore = server.DataStore
@@ -323,13 +327,16 @@ func (server *Server) Start() error {
 		WebhookHandler:         webhookHandler,
 	}
 
+	errorLogger := NewHTTPLogger()
+
 	handler := adminMonitor.WithRedirect(offlineGate.WaitingMiddleware(time.Minute, server.Handler))
 	if server.HTTPEnabled {
 		go func() {
 			log.Info().Str("bind_address", server.BindAddress).Msg("starting HTTP server")
 			httpServer := &http.Server{
-				Addr:    server.BindAddress,
-				Handler: handler,
+				Addr:     server.BindAddress,
+				Handler:  handler,
+				ErrorLog: errorLogger,
 			}
 
 			go shutdown(server.ShutdownCtx, httpServer)
@@ -345,6 +352,7 @@ func (server *Server) Start() error {
 	httpsServer := &http.Server{
 		Addr:         server.BindAddressHTTPS,
 		Handler:      handler,
+		ErrorLog:     errorLogger,
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)), // Disable HTTP/2
 	}
 
