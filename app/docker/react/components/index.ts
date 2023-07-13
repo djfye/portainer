@@ -16,8 +16,10 @@ import { GpusList } from '@/react/docker/host/SetupView/GpusList';
 import { GpusInsights } from '@/react/docker/host/SetupView/GpusInsights';
 import { InsightsBox } from '@/react/components/InsightsBox';
 import { BetaAlert } from '@/react/portainer/environments/update-schedules/common/BetaAlert';
+import { ImagesDatatable } from '@/react/docker/images/ListView/ImagesDatatable/ImagesDatatable';
+import { EventsDatatable } from '@/react/docker/events/EventsDatatables';
 
-export const componentsModule = angular
+const ngModule = angular
   .module('portainer.docker.react.components', [])
   .component('dockerfileDetails', r2a(DockerfileDetails, ['image']))
   .component('dockerHealthStatus', r2a(HealthStatus, ['health']))
@@ -66,4 +68,20 @@ export const componentsModule = angular
     ])
   )
   .component('betaAlert', r2a(BetaAlert, ['className', 'message', 'isHtml']))
-  .component('gpusInsights', r2a(GpusInsights, [])).name;
+  .component('gpusInsights', r2a(GpusInsights, []))
+  .component(
+    'dockerImagesDatatable',
+    r2a(withUIRouter(withCurrentUser(ImagesDatatable)), [
+      'dataset',
+      'environment',
+      'onRemove',
+      'isExportInProgress',
+      'isHostColumnVisible',
+      'onDownload',
+      'onRefresh',
+      'onRemove',
+    ])
+  )
+  .component('dockerEventsDatatable', r2a(EventsDatatable, ['dataset']));
+
+export const componentsModule = ngModule.name;
