@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: tgymnich/fork-sync@v1.6.3
         with:
-          token: ${{ secrets.BOT_TOKEN }}
+          # token: ${{ secrets.BOT_TOKEN }}
           # github_token: ${{ secrets.BOT_TOKEN }}
           # personal_token: ${{ secrets.PERSONAL_TOKEN }}
           owner: portainer
@@ -22,5 +22,5 @@ jobs:
           pr_title: Merge
           # auto_approve: true
           auto_merge: true
-          retries: 3
-          retry_after: 5
+          # retries: 3
+          # retry_after: 5
