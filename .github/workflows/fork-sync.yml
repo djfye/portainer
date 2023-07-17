@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: tgymnich/fork-sync
+      - uses: emilgoldsmith/fork-sync@master
         with:
           # token: ${{ secrets.BOT_TOKEN }}
           # github_token: ${{ secrets.BOT_TOKEN }}
