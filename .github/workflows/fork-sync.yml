@@ -11,12 +11,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: emilgoldsmith/fork-sync@master
+      - uses: tgymnich/fork-sync@master
         with:
           # token: ${{ secrets.BOT_TOKEN }}
           # github_token: ${{ secrets.BOT_TOKEN }}
           # personal_token: ${{ secrets.PERSONAL_TOKEN }}
           owner: portainer
+          repo: portainer
           base: develop
           head: develop
           pr_title: Merge
