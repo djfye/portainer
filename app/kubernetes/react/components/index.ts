@@ -17,9 +17,11 @@ import {
   ApplicationDetailsWidget,
   ApplicationEventsDatatable,
 } from '@/react/kubernetes/applications/DetailsView';
+import { ApplicationContainersDatatable } from '@/react/kubernetes/applications/DetailsView/ApplicationContainersDatatable';
 import { withFormValidation } from '@/react-tools/withFormValidation';
 import { withCurrentUser } from '@/react-tools/withCurrentUser';
 import { PlacementsDatatable } from '@/react/kubernetes/applications/ItemView/PlacementsDatatable';
+import { YAMLInspector } from '@/react/kubernetes/components/YAMLInspector';
 
 export const ngModule = angular
   .module('portainer.kubernetes.react.components', [])
@@ -96,9 +98,25 @@ export const ngModule = angular
     ])
   )
   .component(
+    'kubeYamlInspector',
+    r2a(withUIRouter(withReactQuery(withCurrentUser(YAMLInspector))), [
+      'identifier',
+      'data',
+    ])
+  )
+  .component(
     'applicationSummaryWidget',
     r2a(
       withUIRouter(withReactQuery(withCurrentUser(ApplicationSummaryWidget))),
+      []
+    )
+  )
+  .component(
+    'applicationContainersDatatable',
+    r2a(
+      withUIRouter(
+        withReactQuery(withCurrentUser(ApplicationContainersDatatable))
+      ),
       []
     )
   )
