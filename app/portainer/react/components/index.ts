@@ -180,6 +180,7 @@ export const ngModule = angular
       'isMulti',
       'isClearable',
       'components',
+      'isLoading',
     ])
   )
   .component(
@@ -239,6 +240,6 @@ withFormValidation(
   ngModule,
   EnvironmentVariablesPanel,
   'environmentVariablesPanel',
-  ['explanation', 'showHelpMessage'],
+  ['explanation', 'showHelpMessage', 'isFoldable'],
   envVarValidation
 );

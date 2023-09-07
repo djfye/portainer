@@ -22,11 +22,17 @@ import { AgentHostBrowser } from '@/react/docker/host/BrowseView/AgentHostBrowse
 import { AgentVolumeBrowser } from '@/react/docker/volumes/BrowseView/AgentVolumeBrowser';
 import { ProcessesDatatable } from '@/react/docker/containers/StatsView/ProcessesDatatable';
 import { ScaleServiceButton } from '@/react/docker/services/ListView/ServicesDatatable/columns/schedulingMode/ScaleServiceButton';
+import { SecretsDatatable } from '@/react/docker/secrets/ListView/SecretsDatatable';
+import { StacksDatatable } from '@/react/docker/stacks/ListView/StacksDatatable';
 
 import { containersModule } from './containers';
+import { servicesModule } from './services';
 
 const ngModule = angular
-  .module('portainer.docker.react.components', [containersModule])
+  .module('portainer.docker.react.components', [
+    containersModule,
+    servicesModule,
+  ])
   .component('dockerfileDetails', r2a(DockerfileDetails, ['image']))
   .component('dockerHealthStatus', r2a(HealthStatus, ['health']))
   .component(
@@ -36,7 +42,6 @@ const ngModule = angular
       'nodeName',
       'state',
       'status',
-      'taskId',
     ])
   )
   .component('templateListDropdown', TemplateListDropdownAngular)
@@ -132,6 +137,18 @@ const ngModule = angular
     'dockerServicesDatatableScaleServiceButton',
     r2a(withUIRouter(withCurrentUser(ScaleServiceButton)), ['service'])
   )
-  .component('dockerEventsDatatable', r2a(EventsDatatable, ['dataset']));
-
+  .component('dockerEventsDatatable', r2a(EventsDatatable, ['dataset']))
+  .component(
+    'dockerSecretsDatatable',
+    r2a(withUIRouter(SecretsDatatable), ['dataset', 'onRefresh', 'onRemove'])
+  )
+  .component(
+    'dockerStacksDatatable',
+    r2a(withUIRouter(withCurrentUser(StacksDatatable)), [
+      'dataset',
+      'isImageNotificationEnabled',
+      'onReload',
+      'onRemove',
+    ])
+  );
 export const componentsModule = ngModule.name;
