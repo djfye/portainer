@@ -20,9 +20,9 @@ import { ConfigsDatatable } from '@/react/docker/configs/ListView/ConfigsDatatab
 import { AgentHostBrowser } from '@/react/docker/host/BrowseView/AgentHostBrowser';
 import { AgentVolumeBrowser } from '@/react/docker/volumes/BrowseView/AgentVolumeBrowser';
 import { ProcessesDatatable } from '@/react/docker/containers/StatsView/ProcessesDatatable';
-import { ScaleServiceButton } from '@/react/docker/services/ListView/ServicesDatatable/columns/schedulingMode/ScaleServiceButton';
 import { SecretsDatatable } from '@/react/docker/secrets/ListView/SecretsDatatable';
 import { StacksDatatable } from '@/react/docker/stacks/ListView/StacksDatatable';
+import { NetworksDatatable } from '@/react/docker/networks/ListView/NetworksDatatable';
 
 import { containersModule } from './containers';
 import { servicesModule } from './services';
@@ -57,6 +57,14 @@ const ngModule = angular
       withUIRouter(withReactQuery(withCurrentUser(StackContainersDatatable))),
       ['environment', 'stackName']
     )
+  )
+  .component(
+    'networksDatatable',
+    r2a(withUIRouter(withCurrentUser(NetworksDatatable)), [
+      'dataset',
+      'onRefresh',
+      'onRemove',
+    ])
   )
   .component(
     'gpusList',
@@ -123,10 +131,6 @@ const ngModule = angular
   .component(
     'dockerContainerProcessesDatatable',
     r2a(ProcessesDatatable, ['dataset', 'headers'])
-  )
-  .component(
-    'dockerServicesDatatableScaleServiceButton',
-    r2a(withUIRouter(withCurrentUser(ScaleServiceButton)), ['service'])
   )
   .component('dockerEventsDatatable', r2a(EventsDatatable, ['dataset']))
   .component(
