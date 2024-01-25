@@ -288,7 +288,7 @@ function InnerForm({
               <SwitchField
                 name="restrictSecrets"
                 data-cy="kubeSetup-restrictSecretsToggle"
-                label="In the UI, only admins may view and edit the contents of secrets that are not their own"
+                label="Restrict secret contents access for non-admins (UI only)"
                 tooltip="This hides the ability to view or edit in the UI the contents of secrets that a non-admin user did not create themselves but does not prevent it via the command line."
                 labelClass="col-sm-5 col-lg-4"
                 checked={false}
