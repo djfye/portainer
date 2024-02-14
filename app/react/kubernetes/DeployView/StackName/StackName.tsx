@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 
-import { useCurrentUser } from '@/react/hooks/useUser';
+import { useIsEdgeAdmin } from '@/react/hooks/useUser';
 
-import { InsightsBox } from '@@/InsightsBox';
 import { Link } from '@@/Link';
 import { TextTip } from '@@/Tip/TextTip';
 import { Tooltip } from '@@/Tip/Tooltip';
@@ -23,11 +22,14 @@ export function StackName({
   inputClassName,
   textTip = "Enter or select a 'stack' name to group multiple deployments together, or else leave empty to ignore.",
 }: Props) {
-  const { isAdmin } = useCurrentUser();
+  const isAdminQuery = useIsEdgeAdmin();
   const stackResults = useMemo(
     () => stacks.filter((stack) => stack.includes(stackName ?? '')),
     [stacks, stackName]
   );
+
+  const { isAdmin } = isAdminQuery;
+
   const tooltip = (
     <>
       You may specify a stack name to label resources that you want to group.
@@ -46,34 +48,8 @@ export function StackName({
     </>
   );
 
-  const insightsBoxContent = (
-    <>
-      The stack field below was previously labelled &apos;Name&apos; but, in
-      fact, it&apos;s always been the stack name (hence the relabelling).
-      {isAdmin && (
-        <>
-          <br />
-          Kubernetes Stacks functionality can be turned off entirely via{' '}
-          <Link to="portainer.settings" target="_blank">
-            Kubernetes Settings
-          </Link>
-          .
-        </>
-      )}
-    </>
-  );
-
   return (
     <>
-      <div className="w-fit mb-4">
-        <InsightsBox
-          type="slim"
-          header="Stack"
-          content={insightsBoxContent}
-          insightCloseId="k8s-stacks-name"
-        />
-      </div>
-
       <TextTip className="mb-4" color="blue">
         {textTip}
       </TextTip>
