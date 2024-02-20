@@ -53,7 +53,7 @@ export function ApplicationsStacksDatatable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSystem]);
 
-  const authorized = useAuthorizations('K8sApplicationsW');
+  const { authorized } = useAuthorizations('K8sApplicationsW');
   useRepeater(tableState.autoRefreshRate, onRefresh);
 
   return (
@@ -73,7 +73,7 @@ export function ApplicationsStacksDatatable({
       emptyContentLabel="No stack available."
       description={
         <div className="w-full">
-          <div className="min-w-[140px] float-right">
+          <div className="min-w-[140px] float-right mr-2">
             <NamespaceFilter
               namespaces={namespaces}
               value={namespace}
