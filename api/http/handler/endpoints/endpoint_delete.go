@@ -9,7 +9,6 @@ import (
 
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/dataservices"
-	httperrors "github.com/portainer/portainer/api/http/errors"
 	"github.com/portainer/portainer/api/internal/endpointutils"
 	httperror "github.com/portainer/portainer/pkg/libhttp/error"
 	"github.com/portainer/portainer/pkg/libhttp/request"
@@ -30,6 +29,7 @@ func (payload *DeleteMultiplePayload) Validate(r *http.Request) error {
 	if payload == nil || len(payload.Endpoints) == 0 {
 		return fmt.Errorf("invalid request payload; you must provide a list of nodes to delete")
 	}
+
 	return nil
 }
 
@@ -53,6 +53,7 @@ type DeleteMultipleResp struct {
 // @failure 500 "Server error"
 // @router /endpoints/{id} [delete]
 // @deprecated
+// Deprecated: use endpointDeleteMultiple instead.
 func (handler *Handler) endpointDelete(w http.ResponseWriter, r *http.Request) *httperror.HandlerError {
 	endpointID, err := request.RetrieveNumericRouteVariableValue(r, "id")
 	if err != nil {
@@ -63,10 +64,6 @@ func (handler *Handler) endpointDelete(w http.ResponseWriter, r *http.Request) *
 	deleteCluster, err := request.RetrieveBooleanQueryParameter(r, "deleteCluster", true)
 	if err != nil {
 		return httperror.BadRequest("Invalid boolean query parameter", err)
-	}
-
-	if handler.demoService.IsDemoEnvironment(portainer.EndpointID(endpointID)) {
-		return httperror.Forbidden(httperrors.ErrNotAvailableInDemo.Error(), httperrors.ErrNotAvailableInDemo)
 	}
 
 	err = handler.DataStore.UpdateTx(func(tx dataservices.DataStoreTx) error {
@@ -102,32 +99,30 @@ func (handler *Handler) endpointDelete(w http.ResponseWriter, r *http.Request) *
 // @router /endpoints/remove [post]
 func (handler *Handler) endpointDeleteMultiple(w http.ResponseWriter, r *http.Request) *httperror.HandlerError {
 	var p DeleteMultiplePayload
-	err := request.DecodeAndValidateJSONPayload(r, &p)
-	if err != nil {
+	if err := request.DecodeAndValidateJSONPayload(r, &p); err != nil {
 		return httperror.BadRequest("Invalid request payload", err)
 	}
 
 	var resps []DeleteMultipleResp
-	for _, e := range p.Endpoints {
-		// Demo endpoints cannot be deleted.
-		if handler.demoService.IsDemoEnvironment(portainer.EndpointID(e.ID)) {
-			resps = append(resps, DeleteMultipleResp{
-				Name: e.Name,
-				Err:  httperrors.ErrNotAvailableInDemo,
-			})
-			continue
-		}
 
-		// Attempt deletion.
-		err = handler.DataStore.UpdateTx(func(tx dataservices.DataStoreTx) error {
-			return handler.deleteEndpoint(
+	err := handler.DataStore.UpdateTx(func(tx dataservices.DataStoreTx) error {
+		for _, e := range p.Endpoints {
+			// Attempt deletion.
+			err := handler.deleteEndpoint(
 				tx,
 				portainer.EndpointID(e.ID),
 				e.DeleteCluster,
 			)
-		})
-		resps = append(resps, DeleteMultipleResp{Name: e.Name, Err: err})
+
+			resps = append(resps, DeleteMultipleResp{Name: e.Name, Err: err})
+		}
+
+		return nil
+	})
+	if err != nil {
+		return httperror.InternalServerError("Unable to delete environments", err)
 	}
+
 	return response.JSON(w, resps)
 }
 
