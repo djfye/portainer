@@ -3,10 +3,12 @@ package oauth
 import (
 	"context"
 	"io"
+	"maps"
 	"mime"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	portainer "github.com/portainer/portainer/api"
 
@@ -29,28 +31,28 @@ func NewService() *Service {
 // On success, it will then return the username and token expiry time associated to authenticated user by fetching this information
 // from the resource server and matching it with the user identifier setting.
 func (*Service) Authenticate(code string, configuration *portainer.OAuthSettings) (string, error) {
-	token, err := getOAuthToken(code, configuration)
+	token, err := GetOAuthToken(code, configuration)
 	if err != nil {
 		log.Error().Err(err).Msg("failed retrieving oauth token")
 
 		return "", err
 	}
 
-	idToken, err := getIdToken(token)
+	idToken, err := GetIdToken(token)
 	if err != nil {
 		log.Error().Err(err).Msg("failed parsing id_token")
 	}
 
-	resource, err := getResource(token.AccessToken, configuration)
+	resource, err := GetResource(token.AccessToken, configuration.ResourceURI)
 	if err != nil {
 		log.Error().Err(err).Msg("failed retrieving resource")
 
 		return "", err
 	}
 
-	resource = mergeSecondIntoFirst(idToken, resource)
+	maps.Copy(idToken, resource)
 
-	username, err := getUsername(resource, configuration)
+	username, err := GetUsername(resource, configuration.UserIdentifier)
 	if err != nil {
 		log.Error().Err(err).Msg("failed retrieving username")
 
@@ -60,34 +62,24 @@ func (*Service) Authenticate(code string, configuration *portainer.OAuthSettings
 	return username, nil
 }
 
-// mergeSecondIntoFirst merges the overlap map into the base overwriting any existing values.
-func mergeSecondIntoFirst(base map[string]any, overlap map[string]any) map[string]any {
-	for k, v := range overlap {
-		base[k] = v
-	}
-
-	return base
-}
-
-func getOAuthToken(code string, configuration *portainer.OAuthSettings) (*oauth2.Token, error) {
+func GetOAuthToken(code string, configuration *portainer.OAuthSettings) (*oauth2.Token, error) {
 	unescapedCode, err := url.QueryUnescape(code)
 	if err != nil {
 		return nil, err
 	}
 
 	config := buildConfig(configuration)
-	token, err := config.Exchange(context.Background(), unescapedCode)
-	if err != nil {
-		return nil, err
-	}
 
-	return token, nil
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	return config.Exchange(ctx, unescapedCode)
 }
 
-// getIdToken retrieves parsed id_token from the OAuth token response.
+// GetIdToken retrieves parsed id_token from the OAuth token response.
 // This is necessary for OAuth providers like Azure
 // that do not provide information about user groups on the user resource endpoint.
-func getIdToken(token *oauth2.Token) (map[string]any, error) {
+func GetIdToken(token *oauth2.Token) (map[string]any, error) {
 	tokenData := make(map[string]any)
 
 	idToken := token.Extra("id_token")
@@ -113,8 +105,8 @@ func getIdToken(token *oauth2.Token) (map[string]any, error) {
 	return tokenData, nil
 }
 
-func getResource(token string, configuration *portainer.OAuthSettings) (map[string]any, error) {
-	req, err := http.NewRequest("GET", configuration.ResourceURI, nil)
+func GetResource(token string, resourceURI string) (map[string]any, error) {
+	req, err := http.NewRequest(http.MethodGet, resourceURI, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -159,6 +151,7 @@ func getResource(token string, configuration *portainer.OAuthSettings) (map[stri
 				datamap[k] = v[0]
 			}
 		}
+
 		return datamap, nil
 	}
 
@@ -170,18 +163,16 @@ func getResource(token string, configuration *portainer.OAuthSettings) (map[stri
 	return datamap, nil
 }
 
-func buildConfig(configuration *portainer.OAuthSettings) *oauth2.Config {
-	endpoint := oauth2.Endpoint{
-		AuthURL:   configuration.AuthorizationURI,
-		TokenURL:  configuration.AccessTokenURI,
-		AuthStyle: configuration.AuthStyle,
-	}
-
+func buildConfig(config *portainer.OAuthSettings) *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     configuration.ClientID,
-		ClientSecret: configuration.ClientSecret,
-		Endpoint:     endpoint,
-		RedirectURL:  configuration.RedirectURI,
-		Scopes:       strings.Split(configuration.Scopes, ","),
+		ClientID:     config.ClientID,
+		ClientSecret: config.ClientSecret,
+		RedirectURL:  config.RedirectURI,
+		Scopes:       strings.Split(config.Scopes, ","),
+		Endpoint: oauth2.Endpoint{
+			AuthURL:   config.AuthorizationURI,
+			TokenURL:  config.AccessTokenURI,
+			AuthStyle: config.AuthStyle,
+		},
 	}
 }

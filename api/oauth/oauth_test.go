@@ -5,6 +5,7 @@ import (
 
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/oauth/oauthtest"
+
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 )
@@ -16,14 +17,14 @@ func Test_getOAuthToken(t *testing.T) {
 
 	t.Run("getOAuthToken fails upon invalid code", func(t *testing.T) {
 		code := ""
-		if _, err := getOAuthToken(code, config); err == nil {
+		if _, err := GetOAuthToken(code, config); err == nil {
 			t.Errorf("getOAuthToken should fail upon providing invalid code; code=%v", code)
 		}
 	})
 
 	t.Run("getOAuthToken succeeds upon providing valid code", func(t *testing.T) {
 		code := validCode
-		token, err := getOAuthToken(code, config)
+		token, err := GetOAuthToken(code, config)
 
 		if token == nil || err != nil {
 			t.Errorf("getOAuthToken should successfully return access token upon providing valid code")
@@ -78,7 +79,7 @@ func Test_getIdToken(t *testing.T) {
 				token = token.WithExtra(map[string]any{"id_token": tc.idToken})
 			}
 
-			result, err := getIdToken(token)
+			result, err := GetIdToken(token)
 			assert.Equal(t, err, tc.expectedError)
 			assert.Equal(t, result, tc.expectedResult)
 		})
@@ -90,19 +91,19 @@ func Test_getResource(t *testing.T) {
 	defer srv.Close()
 
 	t.Run("should fail upon missing Authorization Bearer header", func(t *testing.T) {
-		if _, err := getResource("", config); err == nil {
+		if _, err := GetResource("", config.ResourceURI); err == nil {
 			t.Errorf("getResource should fail if access token is not provided in auth bearer header")
 		}
 	})
 
 	t.Run("should fail upon providing incorrect Authorization Bearer header", func(t *testing.T) {
-		if _, err := getResource("incorrect-token", config); err == nil {
+		if _, err := GetResource("incorrect-token", config.ResourceURI); err == nil {
 			t.Errorf("getResource should fail if incorrect access token provided in auth bearer header")
 		}
 	})
 
 	t.Run("should succeed upon providing correct Authorization Bearer header", func(t *testing.T) {
-		if _, err := getResource(oauthtest.AccessToken, config); err != nil {
+		if _, err := GetResource(oauthtest.AccessToken, config.ResourceURI); err != nil {
 			t.Errorf("getResource should succeed if correct access token provided in auth bearer header")
 		}
 	})
