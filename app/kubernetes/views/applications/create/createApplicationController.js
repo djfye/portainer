@@ -424,7 +424,7 @@ class KubernetesCreateApplicationController {
         const ingressNamesLoaded = this.ingresses.map((i) => i.Name);
         const areAllIngressesLoaded = uniqueIngressNamesUsed.every((ingressNameUsed) => ingressNamesLoaded.includes(ingressNameUsed));
         if (!areAllIngressesLoaded) {
-          this.refreshIngresses();
+          this.refreshIngresses(this.application.ResourcePool);
         }
       }
       // update the services

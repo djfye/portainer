@@ -274,7 +274,11 @@ function InnerForm({
           </div>
         </FormSection>
         <FormSection title="Security">
-          {!isRBACEnabled && isRBACEnabledQuery.isSuccess && <RBACAlert />}
+          <div className="form-group">
+            <div className="col-sm-12">
+              {!isRBACEnabled && isRBACEnabledQuery.isSuccess && <RBACAlert />}
+            </div>
+          </div>
           <div className="form-group">
             <div className="col-sm-12">
               <TextTip color="blue" inline={false}>
