@@ -7,6 +7,7 @@ import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
 import { isSystemNamespace } from '@/react/kubernetes/namespaces/queries/useIsSystemNamespace';
 import { useNamespacesQuery } from '@/react/kubernetes/namespaces/queries/useNamespacesQuery';
 import { DefaultDatatableSettings } from '@/react/kubernetes/datatables/DefaultDatatableSettings';
+import { useIngresses } from '@/react/kubernetes/ingresses/queries';
 
 import { ExpandableDatatable } from '@@/datatables/ExpandableDatatable';
 import { TableSettingsMenu } from '@@/datatables';
@@ -39,6 +40,8 @@ export function ApplicationsStacksDatatable({
     namespace: tableState.namespace,
     withDependencies: true,
   });
+  const ingressesQuery = useIngresses(environmentId);
+  const ingresses = ingressesQuery.data ?? [];
   const applications = applicationsQuery.data ?? [];
   const filteredApplications = tableState.showSystemResources
     ? applications
@@ -50,6 +53,7 @@ export function ApplicationsStacksDatatable({
   const removeApplicationsMutation = useDeleteApplicationsMutation({
     environmentId,
     stacks,
+    ingresses,
     reportStacks: true,
   });
 

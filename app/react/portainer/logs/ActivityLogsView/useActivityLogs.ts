@@ -19,7 +19,7 @@ export interface Query {
   offset: number;
   limit: number;
   sortBy?: SortKey;
-  desc?: boolean;
+  sortDesc?: boolean;
   search: string;
   after?: number;
   before?: number;

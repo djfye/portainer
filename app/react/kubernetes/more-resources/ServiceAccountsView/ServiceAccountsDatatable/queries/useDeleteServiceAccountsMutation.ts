@@ -8,14 +8,14 @@ import { queryKeys } from './query-keys';
 
 export function useDeleteServiceAccountsMutation(environmentId: EnvironmentId) {
   const queryClient = useQueryClient();
-  return useMutation(deleteServices, {
+  return useMutation(deleteServiceAccounts, {
     onSuccess: () =>
       queryClient.invalidateQueries(queryKeys.list(environmentId)),
     ...withGlobalError('Unable to delete service accounts'),
   });
 }
 
-export async function deleteServices({
+export async function deleteServiceAccounts({
   environmentId,
   data,
 }: {

@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { HorizontalPodAutoscalerList } from 'kubernetes-types/autoscaling/v1';
+import {
+  HorizontalPodAutoscaler,
+  HorizontalPodAutoscalerList,
+} from 'kubernetes-types/autoscaling/v1';
 
 import { withGlobalError } from '@/react-tools/react-query';
 import { EnvironmentId } from '@/react/portainer/environments/types';
@@ -27,23 +30,15 @@ export function useApplicationHorizontalPodAutoscaler(
       if (!app) {
         return null;
       }
-
       const horizontalPodAutoscalers =
         await getNamespaceHorizontalPodAutoscalers(environmentId, namespace);
       const matchingHorizontalPodAutoscaler =
-        horizontalPodAutoscalers.find((horizontalPodAutoscaler) => {
-          const scaleTargetRef = horizontalPodAutoscaler.spec?.scaleTargetRef;
-          if (scaleTargetRef) {
-            const scaleTargetRefName = scaleTargetRef.name;
-            const scaleTargetRefKind = scaleTargetRef.kind;
-            // include the horizontal pod autoscaler if the scale target ref name and kind match the application name and kind
-            return (
-              scaleTargetRefName === app.metadata?.name &&
-              scaleTargetRefKind === app.kind
-            );
-          }
-          return false;
-        }) || null;
+        getMatchingHorizontalPodAutoscaler(
+          horizontalPodAutoscalers,
+          namespace,
+          appName,
+          app.kind || ''
+        );
       return matchingHorizontalPodAutoscaler;
     },
     {
@@ -55,6 +50,29 @@ export function useApplicationHorizontalPodAutoscaler(
       enabled: !!app,
     }
   );
+}
+
+export function getMatchingHorizontalPodAutoscaler(
+  horizontalPodAutoscalers: HorizontalPodAutoscaler[],
+  appNamespace: string,
+  appName: string,
+  appKind: string
+) {
+  const matchingHorizontalPodAutoscaler =
+    horizontalPodAutoscalers.find((horizontalPodAutoscaler) => {
+      if (horizontalPodAutoscaler.metadata?.namespace !== appNamespace) {
+        return false;
+      }
+      const scaleTargetRef = horizontalPodAutoscaler.spec?.scaleTargetRef;
+      if (scaleTargetRef) {
+        const scaleTargetRefName = scaleTargetRef.name;
+        const scaleTargetRefKind = scaleTargetRef.kind;
+        // include the horizontal pod autoscaler if the scale target ref name and kind match the application name and kind
+        return scaleTargetRefName === appName && scaleTargetRefKind === appKind;
+      }
+      return false;
+    }) || null;
+  return matchingHorizontalPodAutoscaler;
 }
 
 async function getNamespaceHorizontalPodAutoscalers(

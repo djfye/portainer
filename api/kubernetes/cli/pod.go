@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -172,24 +173,24 @@ func (kcl *KubeClient) waitForPodStatus(ctx context.Context, phase corev1.PodPha
 }
 
 // fetchAllPodsAndReplicaSets fetches all pods and replica sets across the cluster, i.e. all namespaces
-func (kcl *KubeClient) fetchAllPodsAndReplicaSets(namespace string, podListOptions metav1.ListOptions) ([]corev1.Pod, []appsv1.ReplicaSet, []appsv1.Deployment, []appsv1.StatefulSet, []appsv1.DaemonSet, []corev1.Service, error) {
+func (kcl *KubeClient) fetchAllPodsAndReplicaSets(namespace string, podListOptions metav1.ListOptions) ([]corev1.Pod, []appsv1.ReplicaSet, []appsv1.Deployment, []appsv1.StatefulSet, []appsv1.DaemonSet, []corev1.Service, []autoscalingv2.HorizontalPodAutoscaler, error) {
 	return kcl.fetchResourcesWithOwnerReferences(namespace, podListOptions, false, false)
 }
 
 // fetchAllApplicationsListResources fetches all pods, replica sets, stateful sets, and daemon sets across the cluster, i.e. all namespaces
 // this is required for the applications list view
-func (kcl *KubeClient) fetchAllApplicationsListResources(namespace string, podListOptions metav1.ListOptions) ([]corev1.Pod, []appsv1.ReplicaSet, []appsv1.Deployment, []appsv1.StatefulSet, []appsv1.DaemonSet, []corev1.Service, error) {
+func (kcl *KubeClient) fetchAllApplicationsListResources(namespace string, podListOptions metav1.ListOptions) ([]corev1.Pod, []appsv1.ReplicaSet, []appsv1.Deployment, []appsv1.StatefulSet, []appsv1.DaemonSet, []corev1.Service, []autoscalingv2.HorizontalPodAutoscaler, error) {
 	return kcl.fetchResourcesWithOwnerReferences(namespace, podListOptions, true, true)
 }
 
 // fetchResourcesWithOwnerReferences fetches pods and other resources based on owner references
-func (kcl *KubeClient) fetchResourcesWithOwnerReferences(namespace string, podListOptions metav1.ListOptions, includeStatefulSets, includeDaemonSets bool) ([]corev1.Pod, []appsv1.ReplicaSet, []appsv1.Deployment, []appsv1.StatefulSet, []appsv1.DaemonSet, []corev1.Service, error) {
+func (kcl *KubeClient) fetchResourcesWithOwnerReferences(namespace string, podListOptions metav1.ListOptions, includeStatefulSets, includeDaemonSets bool) ([]corev1.Pod, []appsv1.ReplicaSet, []appsv1.Deployment, []appsv1.StatefulSet, []appsv1.DaemonSet, []corev1.Service, []autoscalingv2.HorizontalPodAutoscaler, error) {
 	pods, err := kcl.cli.CoreV1().Pods(namespace).List(context.Background(), podListOptions)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, nil, nil, nil, nil, nil, nil
+			return nil, nil, nil, nil, nil, nil, nil, nil
 		}
-		return nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list pods across the cluster: %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list pods across the cluster: %w", err)
 	}
 
 	// if replicaSet owner reference exists, fetch the replica sets
@@ -199,12 +200,12 @@ func (kcl *KubeClient) fetchResourcesWithOwnerReferences(namespace string, podLi
 	if containsReplicaSetOwnerReference(pods) {
 		replicaSets, err = kcl.cli.AppsV1().ReplicaSets(namespace).List(context.Background(), metav1.ListOptions{})
 		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list replica sets across the cluster: %w", err)
+			return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list replica sets across the cluster: %w", err)
 		}
 
 		deployments, err = kcl.cli.AppsV1().Deployments(namespace).List(context.Background(), metav1.ListOptions{})
 		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list deployments across the cluster: %w", err)
+			return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list deployments across the cluster: %w", err)
 		}
 	}
 
@@ -212,7 +213,7 @@ func (kcl *KubeClient) fetchResourcesWithOwnerReferences(namespace string, podLi
 	if includeStatefulSets && containsStatefulSetOwnerReference(pods) {
 		statefulSets, err = kcl.cli.AppsV1().StatefulSets(namespace).List(context.Background(), metav1.ListOptions{})
 		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list stateful sets across the cluster: %w", err)
+			return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list stateful sets across the cluster: %w", err)
 		}
 	}
 
@@ -220,16 +221,21 @@ func (kcl *KubeClient) fetchResourcesWithOwnerReferences(namespace string, podLi
 	if includeDaemonSets && containsDaemonSetOwnerReference(pods) {
 		daemonSets, err = kcl.cli.AppsV1().DaemonSets(namespace).List(context.Background(), metav1.ListOptions{})
 		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list daemon sets across the cluster: %w", err)
+			return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list daemon sets across the cluster: %w", err)
 		}
 	}
 
 	services, err := kcl.cli.CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
-		return nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list services across the cluster: %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list services across the cluster: %w", err)
 	}
 
-	return pods.Items, replicaSets.Items, deployments.Items, statefulSets.Items, daemonSets.Items, services.Items, nil
+	hpas, err := kcl.cli.AutoscalingV2().HorizontalPodAutoscalers(namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("unable to list horizontal pod autoscalers across the cluster: %w", err)
+	}
+
+	return pods.Items, replicaSets.Items, deployments.Items, statefulSets.Items, daemonSets.Items, services.Items, hpas.Items, nil
 }
 
 // isPodUsingConfigMap checks if a pod is using a specific ConfigMap

@@ -6,6 +6,7 @@ import (
 	models "github.com/portainer/portainer/api/http/models/kubernetes"
 	"github.com/rs/zerolog/log"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -31,20 +32,20 @@ func (kcl *KubeClient) fetchApplications(namespace, nodeName string, withDepende
 	}
 	if !withDependencies {
 		// TODO: make sure not to fetch services in fetchAllApplicationsListResources from this call
-		pods, replicaSets, deployments, statefulSets, daemonSets, _, err := kcl.fetchAllApplicationsListResources(namespace, podListOptions)
+		pods, replicaSets, deployments, statefulSets, daemonSets, _, _, err := kcl.fetchAllApplicationsListResources(namespace, podListOptions)
 		if err != nil {
 			return nil, err
 		}
 
-		return kcl.convertPodsToApplications(pods, replicaSets, deployments, statefulSets, daemonSets, nil)
+		return kcl.convertPodsToApplications(pods, replicaSets, deployments, statefulSets, daemonSets, nil, nil)
 	}
 
-	pods, replicaSets, deployments, statefulSets, daemonSets, services, err := kcl.fetchAllApplicationsListResources(namespace, podListOptions)
+	pods, replicaSets, deployments, statefulSets, daemonSets, services, hpas, err := kcl.fetchAllApplicationsListResources(namespace, podListOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	return kcl.convertPodsToApplications(pods, replicaSets, deployments, statefulSets, daemonSets, services)
+	return kcl.convertPodsToApplications(pods, replicaSets, deployments, statefulSets, daemonSets, services, hpas)
 }
 
 // fetchApplicationsForNonAdmin fetches the applications in the namespaces the user has access to.
@@ -62,20 +63,20 @@ func (kcl *KubeClient) fetchApplicationsForNonAdmin(namespace, nodeName string, 
 	}
 
 	if !withDependencies {
-		pods, replicaSets, _, _, _, _, err := kcl.fetchAllPodsAndReplicaSets(namespace, podListOptions)
+		pods, replicaSets, _, _, _, _, _, err := kcl.fetchAllPodsAndReplicaSets(namespace, podListOptions)
 		if err != nil {
 			return nil, err
 		}
 
-		return kcl.convertPodsToApplications(pods, replicaSets, nil, nil, nil, nil)
+		return kcl.convertPodsToApplications(pods, replicaSets, nil, nil, nil, nil, nil)
 	}
 
-	pods, replicaSets, deployments, statefulSets, daemonSets, services, err := kcl.fetchAllApplicationsListResources(namespace, podListOptions)
+	pods, replicaSets, deployments, statefulSets, daemonSets, services, hpas, err := kcl.fetchAllApplicationsListResources(namespace, podListOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	applications, err := kcl.convertPodsToApplications(pods, replicaSets, deployments, statefulSets, daemonSets, services)
+	applications, err := kcl.convertPodsToApplications(pods, replicaSets, deployments, statefulSets, daemonSets, services, hpas)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +93,7 @@ func (kcl *KubeClient) fetchApplicationsForNonAdmin(namespace, nodeName string, 
 }
 
 // convertPodsToApplications processes pods and converts them to applications, ensuring uniqueness by owner reference.
-func (kcl *KubeClient) convertPodsToApplications(pods []corev1.Pod, replicaSets []appsv1.ReplicaSet, deployments []appsv1.Deployment, statefulSets []appsv1.StatefulSet, daemonSets []appsv1.DaemonSet, services []corev1.Service) ([]models.K8sApplication, error) {
+func (kcl *KubeClient) convertPodsToApplications(pods []corev1.Pod, replicaSets []appsv1.ReplicaSet, deployments []appsv1.Deployment, statefulSets []appsv1.StatefulSet, daemonSets []appsv1.DaemonSet, services []corev1.Service, hpas []autoscalingv2.HorizontalPodAutoscaler) ([]models.K8sApplication, error) {
 	applications := []models.K8sApplication{}
 	processedOwners := make(map[string]struct{})
 
@@ -105,7 +106,7 @@ func (kcl *KubeClient) convertPodsToApplications(pods []corev1.Pod, replicaSets 
 			processedOwners[ownerUID] = struct{}{}
 		}
 
-		application, err := kcl.ConvertPodToApplication(pod, replicaSets, deployments, statefulSets, daemonSets, services, true)
+		application, err := kcl.ConvertPodToApplication(pod, replicaSets, deployments, statefulSets, daemonSets, services, hpas, true)
 		if err != nil {
 			return nil, err
 		}
@@ -150,7 +151,7 @@ func (kcl *KubeClient) GetApplicationNamesFromConfigMap(configMap models.K8sConf
 	for _, pod := range pods {
 		if pod.Namespace == configMap.Namespace {
 			if isPodUsingConfigMap(&pod, configMap.Name) {
-				application, err := kcl.ConvertPodToApplication(pod, replicaSets, nil, nil, nil, nil, false)
+				application, err := kcl.ConvertPodToApplication(pod, replicaSets, nil, nil, nil, nil, nil, false)
 				if err != nil {
 					return nil, err
 				}
@@ -167,7 +168,7 @@ func (kcl *KubeClient) GetApplicationNamesFromSecret(secret models.K8sSecret, po
 	for _, pod := range pods {
 		if pod.Namespace == secret.Namespace {
 			if isPodUsingSecret(&pod, secret.Name) {
-				application, err := kcl.ConvertPodToApplication(pod, replicaSets, nil, nil, nil, nil, false)
+				application, err := kcl.ConvertPodToApplication(pod, replicaSets, nil, nil, nil, nil, nil, false)
 				if err != nil {
 					return nil, err
 				}
@@ -180,12 +181,12 @@ func (kcl *KubeClient) GetApplicationNamesFromSecret(secret models.K8sSecret, po
 }
 
 // ConvertPodToApplication converts a pod to an application, updating owner references if necessary
-func (kcl *KubeClient) ConvertPodToApplication(pod corev1.Pod, replicaSets []appsv1.ReplicaSet, deployments []appsv1.Deployment, statefulSets []appsv1.StatefulSet, daemonSets []appsv1.DaemonSet, services []corev1.Service, withResource bool) (*models.K8sApplication, error) {
+func (kcl *KubeClient) ConvertPodToApplication(pod corev1.Pod, replicaSets []appsv1.ReplicaSet, deployments []appsv1.Deployment, statefulSets []appsv1.StatefulSet, daemonSets []appsv1.DaemonSet, services []corev1.Service, hpas []autoscalingv2.HorizontalPodAutoscaler, withResource bool) (*models.K8sApplication, error) {
 	if isReplicaSetOwner(pod) {
 		updateOwnerReferenceToDeployment(&pod, replicaSets)
 	}
 
-	application := createApplication(&pod, deployments, statefulSets, daemonSets, services)
+	application := createApplication(&pod, deployments, statefulSets, daemonSets, services, hpas)
 	if application.ID == "" && application.Name == "" {
 		return nil, nil
 	}
@@ -204,7 +205,7 @@ func (kcl *KubeClient) ConvertPodToApplication(pod corev1.Pod, replicaSets []app
 
 // createApplication creates a K8sApplication object from a pod
 // it sets the application name, namespace, kind, image, stack id, stack name, and labels
-func createApplication(pod *corev1.Pod, deployments []appsv1.Deployment, statefulSets []appsv1.StatefulSet, daemonSets []appsv1.DaemonSet, services []corev1.Service) models.K8sApplication {
+func createApplication(pod *corev1.Pod, deployments []appsv1.Deployment, statefulSets []appsv1.StatefulSet, daemonSets []appsv1.DaemonSet, services []corev1.Service, hpas []autoscalingv2.HorizontalPodAutoscaler) models.K8sApplication {
 	kind := "Pod"
 	name := pod.Name
 
@@ -324,7 +325,11 @@ func createApplication(pod *corev1.Pod, deployments []appsv1.Deployment, statefu
 	}
 
 	if application.ID != "" && application.Name != "" && len(services) > 0 {
-		return updateApplicationWithService(application, services)
+		updateApplicationWithService(&application, services)
+	}
+
+	if application.ID != "" && application.Name != "" && len(hpas) > 0 {
+		updateApplicationWithHorizontalPodAutoscaler(&application, hpas)
 	}
 
 	return application
@@ -332,7 +337,7 @@ func createApplication(pod *corev1.Pod, deployments []appsv1.Deployment, statefu
 
 // updateApplicationWithService updates the application with the services that match the application's selector match labels
 // and are in the same namespace as the application
-func updateApplicationWithService(application models.K8sApplication, services []corev1.Service) models.K8sApplication {
+func updateApplicationWithService(application *models.K8sApplication, services []corev1.Service) {
 	for _, service := range services {
 		serviceSelector := labels.SelectorFromSet(service.Spec.Selector)
 
@@ -341,8 +346,23 @@ func updateApplicationWithService(application models.K8sApplication, services []
 			application.Services = append(application.Services, service)
 		}
 	}
+}
 
-	return application
+func updateApplicationWithHorizontalPodAutoscaler(application *models.K8sApplication, hpas []autoscalingv2.HorizontalPodAutoscaler) {
+	for _, hpa := range hpas {
+		// Check if HPA is in the same namespace as the application
+		if hpa.Namespace != application.ResourcePool {
+			continue
+		}
+
+		// Check if the scale target ref matches the application
+		scaleTargetRef := hpa.Spec.ScaleTargetRef
+		if scaleTargetRef.Name == application.Name && scaleTargetRef.Kind == application.Kind {
+			hpaCopy := hpa // Create a local copy
+			application.HorizontalPodAutoscaler = &hpaCopy
+			break
+		}
+	}
 }
 
 // calculatePodResourceUsage calculates the resource usage for a pod in CPU cores and Bytes
@@ -390,7 +410,7 @@ func (kcl *KubeClient) GetApplicationConfigurationOwnersFromConfigMap(configMap 
 	for _, pod := range pods {
 		if pod.Namespace == configMap.Namespace {
 			if isPodUsingConfigMap(&pod, configMap.Name) {
-				application, err := kcl.ConvertPodToApplication(pod, replicaSets, nil, nil, nil, nil, false)
+				application, err := kcl.ConvertPodToApplication(pod, replicaSets, nil, nil, nil, nil, nil, false)
 				if err != nil {
 					return nil, err
 				}
@@ -416,7 +436,7 @@ func (kcl *KubeClient) GetApplicationConfigurationOwnersFromSecret(secret models
 	for _, pod := range pods {
 		if pod.Namespace == secret.Namespace {
 			if isPodUsingSecret(&pod, secret.Name) {
-				application, err := kcl.ConvertPodToApplication(pod, replicaSets, nil, nil, nil, nil, false)
+				application, err := kcl.ConvertPodToApplication(pod, replicaSets, nil, nil, nil, nil, nil, false)
 				if err != nil {
 					return nil, err
 				}

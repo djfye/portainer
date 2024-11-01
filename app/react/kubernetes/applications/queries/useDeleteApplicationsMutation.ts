@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { HorizontalPodAutoscaler } from 'kubernetes-types/autoscaling/v2';
 
 import { EnvironmentId } from '@/react/portainer/environments/types';
 import axios, { parseAxiosError } from '@/portainer/services/axios';
@@ -10,23 +11,34 @@ import { pluralize } from '@/portainer/helpers/strings';
 import { parseKubernetesAxiosError } from '../../axiosError';
 import { ApplicationRowData } from '../ListView/ApplicationsDatatable/types';
 import { Stack } from '../ListView/ApplicationsStacksDatatable/types';
+import { deleteServices } from '../../services/service';
+import { updateIngress } from '../../ingresses/service';
+import { Ingress } from '../../ingresses/types';
 
 import { queryKeys } from './query-keys';
 
 export function useDeleteApplicationsMutation({
   environmentId,
   stacks,
+  ingresses,
   reportStacks,
 }: {
   environmentId: EnvironmentId;
   stacks: Stack[];
+  ingresses: Ingress[];
   reportStacks?: boolean;
 }) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (applications: ApplicationRowData[]) =>
-      deleteApplications(applications, stacks, environmentId),
-    onSuccess: ({ settledAppDeletions, settledStackDeletions }) => {
+      deleteApplications(applications, stacks, ingresses, environmentId),
+    // apps and stacks deletions results (success and error) are handled here
+    onSuccess: ({
+      settledAppDeletions,
+      settledStackDeletions,
+      settledIngressUpdates,
+      settledHpaDeletions,
+    }) => {
       // one error notification per rejected item
       settledAppDeletions.rejectedItems.forEach(({ item, reason }) => {
         notifyError(
@@ -36,6 +48,18 @@ export function useDeleteApplicationsMutation({
       });
       settledStackDeletions.rejectedItems.forEach(({ item, reason }) => {
         notifyError(`Failed to remove stack '${item.Name}'`, new Error(reason));
+      });
+      settledIngressUpdates.rejectedItems.forEach(({ item, reason }) => {
+        notifyError(
+          `Failed to update ingress paths for '${item.Name}'`,
+          new Error(reason)
+        );
+      });
+      settledHpaDeletions.rejectedItems.forEach(({ item, reason }) => {
+        notifyError(
+          `Failed to remove horizontal pod autoscaler for '${item.metadata?.name}'`,
+          new Error(reason)
+        );
       });
 
       // one success notification for all fulfilled items
@@ -59,7 +83,12 @@ export function useDeleteApplicationsMutation({
             .join(', ')
         );
       }
+      // dont notify successful ingress updates to avoid notification spam
       queryClient.invalidateQueries(queryKeys.applications(environmentId));
+    },
+    // failed service deletions are handled here
+    onError: (error: unknown) => {
+      notifyError('Unable to remove applications', error as Error);
     },
     ...withGlobalError('Unable to remove applications'),
   });
@@ -68,6 +97,7 @@ export function useDeleteApplicationsMutation({
 async function deleteApplications(
   applications: ApplicationRowData[],
   stacks: Stack[],
+  ingresses: Ingress[],
   environmentId: EnvironmentId
 ) {
   const settledAppDeletions = await getAllSettledItems(
@@ -84,7 +114,83 @@ async function deleteApplications(
     (stack) => deleteStack(stack, environmentId)
   );
 
-  return { settledAppDeletions, settledStackDeletions };
+  // update associated k8s ressources
+  const servicesToDelete = getServicesFromApplications(applications);
+  // axios error handling is done inside deleteServices already
+  await deleteServices({
+    environmentId,
+    data: servicesToDelete,
+  });
+  const hpasToDelete = applications
+    .map((app) => app.HorizontalPodAutoscaler)
+    .filter((hpa) => !!hpa);
+  const settledHpaDeletions = await getAllSettledItems(hpasToDelete, (hpa) =>
+    deleteHorizontalPodAutoscaler(hpa, environmentId)
+  );
+  const updatedIngresses = getUpdatedIngressesWithRemovedPaths(
+    ingresses,
+    servicesToDelete
+  );
+  const settledIngressUpdates = await getAllSettledItems(
+    updatedIngresses,
+    (ingress) => updateIngress(environmentId, ingress)
+  );
+
+  return {
+    settledAppDeletions,
+    settledStackDeletions,
+    settledIngressUpdates,
+    settledHpaDeletions,
+  };
+}
+
+function getServicesFromApplications(
+  applications: ApplicationRowData[]
+): Record<string, string[]> {
+  return applications.reduce<Record<string, string[]>>(
+    (namespaceServicesMap, application) => {
+      const serviceNames =
+        application.Services?.map((service) => service.metadata?.name).filter(
+          (name): name is string => !!name
+        ) || [];
+      if (namespaceServicesMap[application.ResourcePool]) {
+        return {
+          ...namespaceServicesMap,
+          [application.ResourcePool]: [
+            ...namespaceServicesMap[application.ResourcePool],
+            ...serviceNames,
+          ],
+        };
+      }
+      return {
+        ...namespaceServicesMap,
+        [application.ResourcePool]: serviceNames,
+      };
+    },
+    {}
+  );
+}
+
+// return a list of ingresses, which need updated because their paths should be removed for deleted services.
+function getUpdatedIngressesWithRemovedPaths(
+  ingresses: Ingress[],
+  servicesToDelete: Record<string, string[]>
+) {
+  return ingresses.reduce<Ingress[]>((updatedIngresses, ingress) => {
+    if (!ingress.Paths) {
+      return updatedIngresses;
+    }
+    const servicesInNamespace = servicesToDelete[ingress.Namespace] || [];
+    // filter out the paths for services that are in the list of services to delete
+    const updatedIngressPaths =
+      ingress.Paths.filter(
+        (path) => !servicesInNamespace.includes(path.ServiceName)
+      ) ?? [];
+    if (updatedIngressPaths.length !== ingress.Paths?.length) {
+      return [...updatedIngresses, { ...ingress, Paths: updatedIngressPaths }];
+    }
+    return updatedIngresses;
+  }, []);
 }
 
 async function deleteStack(stack: Stack, environmentId: EnvironmentId) {
@@ -170,6 +276,22 @@ async function uninstallHelmApplication(
   } catch (error) {
     // parseAxiosError, because it's a regular portainer api error
     throw parseAxiosError(error, 'Unable to remove application');
+  }
+}
+
+async function deleteHorizontalPodAutoscaler(
+  hpa: HorizontalPodAutoscaler,
+  environmentId: EnvironmentId
+) {
+  try {
+    await axios.delete(
+      `/endpoints/${environmentId}/kubernetes/apis/autoscaling/v2/namespaces/${hpa.metadata?.namespace}/horizontalpodautoscalers/${hpa.metadata?.name}`
+    );
+  } catch (error) {
+    throw parseKubernetesAxiosError(
+      error,
+      'Unable to remove horizontal pod autoscaler'
+    );
   }
 }
 

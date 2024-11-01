@@ -68,7 +68,7 @@ export async function updateIngress(
   ingress: Ingress
 ) {
   try {
-    return await axios.put(buildUrl(environmentId, ingress.Namespace), ingress);
+    await axios.put(buildUrl(environmentId, ingress.Namespace), ingress);
   } catch (e) {
     throw parseAxiosError(e as Error, 'Unable to update an ingress');
   }

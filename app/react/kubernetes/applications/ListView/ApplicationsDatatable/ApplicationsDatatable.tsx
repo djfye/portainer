@@ -12,6 +12,7 @@ import { useAuthorizations } from '@/react/hooks/useUser';
 import { isSystemNamespace } from '@/react/kubernetes/namespaces/queries/useIsSystemNamespace';
 import { KubernetesApplicationTypes } from '@/kubernetes/models/application/models/appConstants';
 import { useEnvironment } from '@/react/portainer/environments/queries';
+import { useIngresses } from '@/react/kubernetes/ingresses/queries';
 
 import { TableSettingsMenu } from '@@/datatables';
 import { DeleteButton } from '@@/buttons/DeleteButton';
@@ -58,6 +59,8 @@ export function ApplicationsDatatable({
     namespace: tableState.namespace,
     withDependencies: true,
   });
+  const ingressesQuery = useIngresses(environmentId);
+  const ingresses = ingressesQuery.data ?? [];
   const applications = useApplicationsRowData(applicationsQuery.data);
   const filteredApplications = tableState.showSystemResources
     ? applications
@@ -69,6 +72,7 @@ export function ApplicationsDatatable({
   const removeApplicationsMutation = useDeleteApplicationsMutation({
     environmentId,
     stacks,
+    ingresses,
     reportStacks: false,
   });
 

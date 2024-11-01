@@ -33,7 +33,8 @@ export function useTableStateWithStorage<T extends BasicTableSettings>(
 }
 
 export function useTableStateWithoutStorage(
-  defaultSortKey?: string
+  defaultSortKey?: string,
+  defaultSortDesc: boolean = false
 ): BasicTableSettings & {
   setSearch: (search: string) => void;
   search: string;
@@ -41,7 +42,7 @@ export function useTableStateWithoutStorage(
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [sortBy, setSortBy] = useState(
-    defaultSortKey ? { id: defaultSortKey, desc: false } : undefined
+    defaultSortKey ? { id: defaultSortKey, desc: defaultSortDesc } : undefined
   );
 
   return {

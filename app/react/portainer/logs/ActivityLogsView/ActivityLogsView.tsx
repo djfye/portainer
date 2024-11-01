@@ -17,14 +17,14 @@ export function ActivityLogsView() {
     { start: Date; end: Date | null } | undefined
   >(undefined);
   const [page, setPage] = useState(0);
-  const tableState = useTableStateWithoutStorage('Timestamp');
+  const tableState = useTableStateWithoutStorage('Timestamp', true);
   const offset = page * tableState.pageSize;
 
   const query = {
     offset,
     limit: tableState.pageSize,
     sortBy: getSortType(tableState.sortBy?.id),
-    desc: tableState.sortBy?.desc,
+    sortDesc: tableState.sortBy?.desc,
     search: tableState.search,
     ...(range
       ? {
