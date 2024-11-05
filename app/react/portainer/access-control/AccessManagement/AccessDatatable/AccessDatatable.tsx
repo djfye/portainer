@@ -80,9 +80,9 @@ export function AccessDatatable({
         </>
       )}
       description={
-        <div className="small text-muted mx-4 mb-4">
+        <>
           {inheritFrom && (
-            <>
+            <div className="small text-muted">
               <div>
                 Access tagged as <code>inherited</code> are inherited from the
                 group access. They cannot be removed or modified at the
@@ -91,7 +91,7 @@ export function AccessDatatable({
               <div>
                 Access tagged as <code>override</code> are overriding the group
               </div>
-            </>
+            </div>
           )}
           {isBE && showWarning && isUpdateEnabled && (
             <TextTip>
@@ -101,7 +101,7 @@ export function AccessDatatable({
               </div>
             </TextTip>
           )}
-        </div>
+        </>
       }
     />
   );

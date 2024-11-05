@@ -94,7 +94,7 @@ function HelmDatatableDescription({ isAdmin }: { isAdmin: boolean }) {
       ) : (
         <span>globally-set Helm repo</span>
       )}
-      ) and shown in the Create from Manifest screen&apos;s Helm charts list.
+      ) and shown in the Create from file screen&apos;s Helm charts list.
     </TextTip>
   );
 }

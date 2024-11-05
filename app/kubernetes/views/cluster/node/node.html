@@ -11,7 +11,7 @@
             <uib-tab index="0" classes="btn-sm" select="ctrl.selectTab(0)">
               <uib-tab-heading class="flex-center gap-1"> <pr-icon icon="'hard-drive'" size="'sm'"></pr-icon> Node </uib-tab-heading>
 
-              <form class="form-horizontal" name="kubernetesNodeUpdateForm" style="padding: 20px" autocomplete="off">
+              <form class="form-horizontal widget-body" name="kubernetesNodeUpdateForm" autocomplete="off">
                 <table class="table">
                   <tbody ng-if="ctrl.node">
                     <tr>
@@ -73,7 +73,7 @@
                   </tbody>
                 </table>
 
-                <div style="padding: 8px">
+                <div class="mt-5">
                   <kubernetes-resource-reservation
                     ng-if="ctrl.resourceReservation"
                     cpu-reservation="ctrl.resourceReservation.CpuRequest"
@@ -88,7 +88,7 @@
                   </kubernetes-resource-reservation>
                 </div>
 
-                <div style="padding: 8px">
+                <div>
                   <!-- #region labels -->
                   <div class="col-sm-12 form-section-title"> Labels </div>
 

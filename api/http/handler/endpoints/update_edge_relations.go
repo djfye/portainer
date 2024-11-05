@@ -17,7 +17,16 @@ func (handler *Handler) updateEdgeRelations(tx dataservices.DataStoreTx, endpoin
 
 	relation, err := tx.EndpointRelation().EndpointRelation(endpoint.ID)
 	if err != nil {
-		return errors.WithMessage(err, "Unable to find environment relation inside the database")
+		if !tx.IsErrObjectNotFound(err) {
+			return errors.WithMessage(err, "Unable to retrieve environment relation inside the database")
+		}
+
+		relation = &portainer.EndpointRelation{
+			EndpointID: endpoint.ID,
+		}
+		if err := tx.EndpointRelation().Create(relation); err != nil {
+			return errors.WithMessage(err, "Unable to create environment relation inside the database")
+		}
 	}
 
 	endpointGroup, err := tx.EndpointGroup().Read(endpoint.GroupID)

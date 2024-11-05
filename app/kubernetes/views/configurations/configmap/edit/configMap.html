@@ -28,15 +28,15 @@
                 <pr-icon icon="'file-code'"></pr-icon>
                 ConfigMap
               </uib-tab-heading>
-              <div style="padding: 20px">
+              <div class="widget-body">
                 <table class="table" data-cy="k8sConfigDetail-configTable">
                   <tbody>
                     <tr>
-                      <td class="w-[40%] !border-none !pl-0">Name</td>
+                      <td class="w-[40%] !border-none">Name</td>
                       <td class="!border-none"> {{ ctrl.configuration.Name }} </td>
                     </tr>
                     <tr>
-                      <td class="!pl-0">Namespace</td>
+                      <td>Namespace</td>
                       <td>
                         <a ui-sref="kubernetes.resourcePools.resourcePool({ id: ctrl.configuration.Namespace })">{{ ctrl.configuration.Namespace }}</a>
                         <span style="margin-left: 5px" class="label label-info image-tag" ng-if="ctrl.isSystemNamespace()">system</span>
