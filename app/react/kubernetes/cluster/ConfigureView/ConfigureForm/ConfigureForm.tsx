@@ -23,7 +23,7 @@ import { InsightsBox } from '@@/InsightsBox';
 
 import { useIngressControllerClassMapQuery } from '../../ingressClass/useIngressControllerClassMap';
 import { IngressControllerClassMap } from '../../ingressClass/types';
-import { useIsRBACEnabledQuery } from '../../getIsRBACEnabled';
+import { useIsRBACEnabled } from '../../useIsRBACEnabled';
 import { getIngressClassesFormValues } from '../../ingressClass/IngressClassDatatable/utils';
 
 import { useStorageClassesFormValues } from './useStorageClasses';
@@ -102,7 +102,7 @@ function InnerForm({
   environmentId: EnvironmentId;
 }) {
   const { data: isRBACEnabled, ...isRBACEnabledQuery } =
-    useIsRBACEnabledQuery(environmentId);
+    useIsRBACEnabled(environmentId);
 
   const onChangeControllers = useCallback(
     (controllerClassMap: IngressControllerClassMap[]) =>

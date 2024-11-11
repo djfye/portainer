@@ -151,20 +151,16 @@ function getServicesFromApplications(
     (namespaceServicesMap, application) => {
       const serviceNames =
         application.Services?.map((service) => service.metadata?.name).filter(
-          (name): name is string => !!name
+          (name) => name !== undefined
         ) || [];
-      if (namespaceServicesMap[application.ResourcePool]) {
-        return {
-          ...namespaceServicesMap,
-          [application.ResourcePool]: [
-            ...namespaceServicesMap[application.ResourcePool],
-            ...serviceNames,
-          ],
-        };
-      }
+      const existingServices =
+        namespaceServicesMap[application.ResourcePool] || [];
+      const uniqueServicesForNamespace = Array.from(
+        new Set([...existingServices, ...serviceNames])
+      );
       return {
         ...namespaceServicesMap,
-        [application.ResourcePool]: serviceNames,
+        [application.ResourcePool]: uniqueServicesForNamespace,
       };
     },
     {}

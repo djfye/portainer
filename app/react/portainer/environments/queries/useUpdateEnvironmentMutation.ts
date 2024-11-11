@@ -8,11 +8,11 @@ import {
   KubernetesSettings,
   DeploymentOptions,
   EndpointChangeWindow,
+  EnvironmentGroupId,
 } from '@/react/portainer/environments/types';
 import axios, { parseAxiosError } from '@/portainer/services/axios';
 import { TagId } from '@/portainer/tags/types';
 
-import { EnvironmentGroupId } from '../environment-groups/types';
 import { buildUrl } from '../environment.service/utils';
 
 import { environmentQueryKeys } from './query-keys';

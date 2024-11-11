@@ -132,21 +132,9 @@
                     definitions="ctrl.state.template.Variables"
                     value="ctrl.formValues.Variables"
                     on-change="(ctrl.onChangeTemplateVariables)"
+                    is-load-failed="ctrl.state.BuildMethod === ctrl.BuildMethods.CUSTOM_TEMPLATE && ctrl.state.templateId && ctrl.state.templateLoadFailed"
                   ></custom-templates-variables-field>
                 </div>
-
-                <span ng-if="ctrl.state.BuildMethod === ctrl.BuildMethods.CUSTOM_TEMPLATE && ctrl.state.templateId && ctrl.state.templateLoadFailed" class="row">
-                  <span class="col-sm-offset-3 col-lg-offset-2 col-sm-8">
-                    <p class="small vertical-center text-danger mb-5" ng-if="ctrl.currentUser.isAdmin || ctrl.currentUser.id === ctrl.state.template.CreatedByUserId">
-                      <pr-icon icon="'alert-triangle'" mode="'danger'" size="'md'" feather="true"></pr-icon>Custom template could not be loaded, please
-                      <a ui-sref="kubernetes.templates.custom.edit({id: ctrl.state.templateId})">click here</a> for configuration.</p
-                    >
-                    <p class="small vertical-center text-danger mb-5" ng-if="!(ctrl.currentUser.isAdmin || ctrl.currentUser.id === ctrl.state.template.CreatedByUserId)">
-                      <pr-icon icon="'alert-triangle'" mode="'danger'" size="'md'" feather="true"></pr-icon>Custom template could not be loaded, please contact your
-                      administrator.</p
-                    >
-                  </span>
-                </span>
 
                 <!-- editor -->
                 <div class="mt-4">

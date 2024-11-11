@@ -3,15 +3,14 @@ import axios, {
   json2formData,
   arrayToJson,
 } from '@/portainer/services/axios';
-import { type EnvironmentGroupId } from '@/react/portainer/environments/environment-groups/types';
-import { type TagId } from '@/portainer/tags/types';
-import { EdgeAsyncIntervalsValues } from '@/react/edge/components/EdgeAsyncIntervalsForm';
-
 import {
+  type EnvironmentGroupId,
   type Environment,
   ContainerEngine,
   EnvironmentCreationTypes,
-} from '../types';
+} from '@/react/portainer/environments/types';
+import { type TagId } from '@/portainer/tags/types';
+import { EdgeAsyncIntervalsValues } from '@/react/edge/components/EdgeAsyncIntervalsForm';
 
 import { buildUrl } from './utils';
 

@@ -104,7 +104,7 @@ export const columns = _.compact([
                 to="edge.stacks.edit"
                 params={{
                   stackId: row.original.Id,
-                  tab: 1,
+                  tab: 'environments',
                   status: StatusType.Error,
                 }}
                 data-cy={`edge-stacks-error-${row.original.Id}`}

@@ -6,7 +6,7 @@ import { withCurrentUser } from '@/react-tools/withCurrentUser';
 import { withReactQuery } from '@/react-tools/withReactQuery';
 import { NamespacesDatatable } from '@/react/kubernetes/namespaces/ListView/NamespacesDatatable';
 import { NamespaceAppsDatatable } from '@/react/kubernetes/namespaces/ItemView/NamespaceAppsDatatable';
-import { NamespaceAccessDatatable } from '@/react/kubernetes/namespaces/AccessView/AccessDatatable';
+import { AccessDatatable } from '@/react/kubernetes/namespaces/AccessView/AccessDatatable/AccessDatatable';
 
 export const namespacesModule = angular
   .module('portainer.kubernetes.react.components.namespaces', [])
@@ -24,8 +24,5 @@ export const namespacesModule = angular
   )
   .component(
     'namespaceAccessDatatable',
-    r2a(withUIRouter(withReactQuery(NamespaceAccessDatatable)), [
-      'dataset',
-      'onRemove',
-    ])
+    r2a(withUIRouter(withReactQuery(AccessDatatable)), [])
   ).name;

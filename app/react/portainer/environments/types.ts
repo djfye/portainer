@@ -1,6 +1,15 @@
 import { TagId } from '@/portainer/tags/types';
-import { EnvironmentGroupId } from '@/react/portainer/environments/environment-groups/types';
 import { DockerSnapshot } from '@/react/docker/snapshots/types';
+
+export type EnvironmentGroupId = number;
+
+type RoleId = number;
+interface AccessPolicy {
+  RoleId: RoleId;
+}
+
+export type UserAccessPolicies = Record<number, AccessPolicy>; // map[UserID]AccessPolicy
+export type TeamAccessPolicies = Record<number, AccessPolicy>;
 
 export type EnvironmentId = number;
 
@@ -158,6 +167,8 @@ export type Environment = {
    *  A message that describes the status. Should be included for Status Provisioning or Error.
    */
   StatusMessage?: EnvironmentStatusMessage;
+  UserAccessPolicies?: UserAccessPolicies;
+  TeamAccessPolicies?: TeamAccessPolicies;
 };
 
 /**

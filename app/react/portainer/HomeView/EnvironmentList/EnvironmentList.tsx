@@ -10,8 +10,8 @@ import {
   EnvironmentStatus,
   PlatformType,
   EdgeTypes,
+  EnvironmentGroupId,
 } from '@/react/portainer/environments/types';
-import { EnvironmentGroupId } from '@/react/portainer/environments/environment-groups/types';
 import {
   refetchIfAnyOffline,
   useEnvironmentList,

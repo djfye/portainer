@@ -12,6 +12,15 @@
       >
         <option value="" label="Select a Custom template" disabled selected="selected"> </option>
       </select>
+      <span ng-if="$ctrl.isLoadFailed">
+        <p class="text-warning mb-5 !inline-flex gap-1 !align-top text-xs" ng-if="ctrl.currentUser.isAdmin || ctrl.currentUser.id === ctrl.state.template.CreatedByUserId">
+          <pr-icon icon="'alert-triangle'" mode="'warning'" size="'sm'"></pr-icon>Custom template could not be loaded, please
+          <a ui-sref="kubernetes.templates.custom.edit({id: ctrl.state.templateId})">click here</a> for configuration.</p
+        >
+        <p class="text-warning mb-5 !inline-flex gap-1 !align-top text-xs" ng-if="!(ctrl.currentUser.isAdmin || ctrl.currentUser.id === ctrl.state.template.CreatedByUserId)">
+          <pr-icon icon="'alert-triangle'" mode="'warning'" size="'sm'"></pr-icon>Custom template could not be loaded, please contact your administrator.</p
+        >
+      </span>
       <span class="small text-muted pt-[7px]" ng-if="!$ctrl.templates.length">
         No custom templates are available. Head over to the <a ui-state="$ctrl.newTemplatePath">custom template view</a> to create one.
       </span>

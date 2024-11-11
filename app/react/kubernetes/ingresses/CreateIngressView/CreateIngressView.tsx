@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { debounce } from 'lodash';
 
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
-import { useSecrets } from '@/react/kubernetes/configs/secret.service';
+import { useK8sSecrets } from '@/react/kubernetes/configs/queries/useK8sSecrets';
 import { useNamespaceServices } from '@/react/kubernetes/networks/services/queries';
 import { notifyError, notifySuccess } from '@/portainer/services/notifications';
 import { useAuthorizations } from '@/react/hooks/useUser';
@@ -70,7 +70,7 @@ export function CreateIngressView() {
     useNamespacesQuery(environmentId);
 
   const { data: allServices } = useNamespaceServices(environmentId, namespace);
-  const secretsResults = useSecrets(environmentId, namespace);
+  const secretsResults = useK8sSecrets(environmentId, namespace);
   const ingressesResults = useIngresses(environmentId);
   const { data: ingressControllers, ...ingressControllersQuery } =
     useIngressControllers(environmentId, namespace);

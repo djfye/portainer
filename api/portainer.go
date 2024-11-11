@@ -2,6 +2,7 @@ package portainer
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -1721,6 +1722,30 @@ const (
 	// EdgeStackStatusCompleted represents a completed Edge stack
 	EdgeStackStatusCompleted
 )
+
+var edgeStackStatusTypeStr = map[EdgeStackStatusType]string{
+	EdgeStackStatusPending:             "Pending",
+	EdgeStackStatusDeploymentReceived:  "DeploymentReceived",
+	EdgeStackStatusError:               "Error",
+	EdgeStackStatusAcknowledged:        "Acknowledged",
+	EdgeStackStatusRemoved:             "Removed",
+	EdgeStackStatusRemoteUpdateSuccess: "RemoteUpdateSuccess",
+	EdgeStackStatusImagesPulled:        "ImagesPulled",
+	EdgeStackStatusRunning:             "Running",
+	EdgeStackStatusDeploying:           "Deploying",
+	EdgeStackStatusRemoving:            "Removing",
+	EdgeStackStatusPausedDeploying:     "PausedDeploying",
+	EdgeStackStatusRollingBack:         "RollingBack",
+	EdgeStackStatusRolledBack:          "RolledBack",
+	EdgeStackStatusCompleted:           "Completed",
+}
+
+func (s EdgeStackStatusType) String() string {
+	if str, ok := edgeStackStatusTypeStr[s]; ok {
+		return fmt.Sprintf("%d (%s)", s, str)
+	}
+	return fmt.Sprintf("%d (UNKNOWN)", s)
+}
 
 const (
 	_ EndpointStatus = iota

@@ -12,9 +12,8 @@ import { queryKeys as edgeGroupQueryKeys } from '@/react/edge/edge-groups/querie
 import { queryKeys as groupQueryKeys } from '@/react/portainer/environments/environment-groups/queries/query-keys';
 import { tagKeys } from '@/portainer/tags/queries';
 
-import { EnvironmentId } from '../types';
+import { EnvironmentId, EnvironmentGroupId } from '../types';
 import { buildUrl } from '../environment.service/utils';
-import { EnvironmentGroupId } from '../environment-groups/types';
 
 import { environmentQueryKeys } from './query-keys';
 

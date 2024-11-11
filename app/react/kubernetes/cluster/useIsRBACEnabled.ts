@@ -2,20 +2,20 @@ import { useQuery } from '@tanstack/react-query';
 
 import axios, { parseAxiosError } from '@/portainer/services/axios';
 import { EnvironmentId } from '@/react/portainer/environments/types';
-import { withError } from '@/react-tools/react-query';
+import { withGlobalError } from '@/react-tools/react-query';
 
-export function useIsRBACEnabledQuery(environmentId: EnvironmentId) {
+export function useIsRBACEnabled(environmentId: EnvironmentId) {
   return useQuery<boolean, Error>(
     ['environments', environmentId, 'rbacEnabled'],
     () => getIsRBACEnabled(environmentId),
     {
       enabled: !!environmentId,
-      ...withError('Unable to check if RBAC is enabled.'),
+      ...withGlobalError('Unable to check if RBAC is enabled.'),
     }
   );
 }
 
-export async function getIsRBACEnabled(environmentId: EnvironmentId) {
+async function getIsRBACEnabled(environmentId: EnvironmentId) {
   try {
     const { data } = await axios.get<boolean>(
       `kubernetes/${environmentId}/rbac_enabled`

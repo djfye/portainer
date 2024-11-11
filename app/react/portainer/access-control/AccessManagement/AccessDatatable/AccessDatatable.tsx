@@ -56,6 +56,7 @@ export function AccessDatatable({
       isLoading={!dataset}
       columns={columns}
       settingsManager={tableState}
+      getRowId={(row) => `${row.Type}-${row.Id}`}
       extendTableOptions={mergeOptions(
         withMeta({
           table: 'access-table',

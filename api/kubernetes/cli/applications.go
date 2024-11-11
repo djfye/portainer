@@ -341,7 +341,7 @@ func updateApplicationWithService(application *models.K8sApplication, services [
 	for _, service := range services {
 		serviceSelector := labels.SelectorFromSet(service.Spec.Selector)
 
-		if service.Namespace == application.ResourcePool && serviceSelector.Matches(labels.Set(application.MatchLabels)) {
+		if service.Namespace == application.ResourcePool && !serviceSelector.Empty() && serviceSelector.Matches(labels.Set(application.MatchLabels)) {
 			application.ServiceType = string(service.Spec.Type)
 			application.Services = append(application.Services, service)
 		}

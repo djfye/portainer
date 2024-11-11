@@ -1,7 +1,7 @@
 import { FormikErrors } from 'formik';
 
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
-import { useSecrets } from '@/react/kubernetes/configs/secret.service';
+import { useK8sSecrets } from '@/react/kubernetes/configs/queries/useK8sSecrets';
 
 import { FormSection } from '@@/form-components/FormSection/FormSection';
 import { TextTip } from '@@/Tip/TextTip';
@@ -24,7 +24,7 @@ export function SecretsFormSection({
   errors,
   namespace,
 }: Props) {
-  const secretsQuery = useSecrets(useEnvironmentId(), namespace);
+  const secretsQuery = useK8sSecrets(useEnvironmentId(), namespace);
   const secrets = secretsQuery.data || [];
 
   if (secretsQuery.isLoading) {

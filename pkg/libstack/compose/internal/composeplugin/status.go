@@ -113,7 +113,7 @@ func aggregateStatuses(services []service) (libstack.Status, string) {
 
 }
 
-func (wrapper *PluginWrapper) WaitForStatus(ctx context.Context, name string, status libstack.Status) <-chan libstack.WaitResult {
+func (wrapper *PluginWrapper) WaitForStatus(ctx context.Context, name string, status libstack.Status, _ string) <-chan libstack.WaitResult {
 	waitResultCh := make(chan libstack.WaitResult)
 	waitResult := libstack.WaitResult{
 		Status: status,
@@ -200,6 +200,7 @@ func (wrapper *PluginWrapper) WaitForStatus(ctx context.Context, name string, st
 
 			log.Debug().
 				Str("project_name", name).
+				Str("required_status", string(status)).
 				Str("status", string(aggregateStatus)).
 				Msg("waiting for status")
 

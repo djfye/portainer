@@ -54,7 +54,7 @@ export function useIsPureAdmin() {
 }
 
 /**
- * Load the admin status of the user, (admin >= edge admin)
+ * Load the admin status of the user, returning true if the user is edge admin or admin.
  * @param forceEnvironmentId to force the environment id, used where the environment id can't be loaded from the router, like sidebar
  * @returns query result with isLoading and isAdmin - isAdmin is true if the user edge admin or admin.
  */

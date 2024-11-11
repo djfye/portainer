@@ -1,9 +1,8 @@
 import _ from 'lodash-es';
 import { KubernetesConfigMap, KubernetesPortainerAccessConfigMap } from 'Kubernetes/models/config-map/models';
 import { KubernetesConfigMapCreatePayload, KubernetesConfigMapUpdatePayload } from 'Kubernetes/models/config-map/payloads';
-import { KubernetesPortainerConfigurationOwnerLabel } from 'Kubernetes/models/configuration/models';
 import { KubernetesConfigurationFormValuesEntry } from 'Kubernetes/models/configuration/formvalues';
-
+import { ConfigurationOwnerUsernameLabel } from '@/react/kubernetes/configs/constants';
 class KubernetesConfigMapConverter {
   static apiToPortainerAccessConfigMap(data) {
     const res = new KubernetesPortainerAccessConfigMap();
@@ -35,7 +34,7 @@ class KubernetesConfigMapConverter {
     res.Id = data.metadata.uid;
     res.Name = data.metadata.name;
     res.Namespace = data.metadata.namespace;
-    res.ConfigurationOwner = data.metadata.labels ? data.metadata.labels[KubernetesPortainerConfigurationOwnerLabel] : '';
+    res.ConfigurationOwner = data.metadata.labels ? data.metadata.labels[ConfigurationOwnerUsernameLabel] : '';
     res.CreationDate = data.metadata.creationTimestamp;
     res.Yaml = yaml ? yaml.data : '';
     res.Labels = data.metadata.labels;
@@ -79,7 +78,7 @@ class KubernetesConfigMapConverter {
     res.metadata.name = data.Name;
     res.metadata.namespace = data.Namespace.Namespace.Name;
     const configurationOwner = _.truncate(data.ConfigurationOwner, { length: 63, omission: '' });
-    res.metadata.labels[KubernetesPortainerConfigurationOwnerLabel] = configurationOwner;
+    res.metadata.labels[ConfigurationOwnerUsernameLabel] = configurationOwner;
 
     _.forEach(data.Data, (entry) => {
       if (entry.IsBinary) {
@@ -100,7 +99,7 @@ class KubernetesConfigMapConverter {
     res.metadata.name = data.Name;
     res.metadata.namespace = data.Namespace;
     res.metadata.labels = data.Labels || {};
-    res.metadata.labels[KubernetesPortainerConfigurationOwnerLabel] = data.ConfigurationOwner;
+    res.metadata.labels[ConfigurationOwnerUsernameLabel] = data.ConfigurationOwner;
     _.forEach(data.Data, (entry) => {
       if (entry.IsBinary) {
         res.binaryData[entry.Key] = entry.Value;
