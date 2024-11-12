@@ -1,10 +1,7 @@
 export type ServiceAccount = {
   name: string;
-  namespace: string;
-  resourceVersion: string;
   uid: string;
+  namespace: string;
   creationDate: string;
-
   isSystem: boolean;
-  isUnused: boolean;
 };

@@ -74,6 +74,20 @@ export function GitForm({
         errors={errors.RepositoryURL}
       />
 
+      <div className="form-group">
+        <div className="col-sm-12">
+          <SwitchField
+            label="Skip TLS Verification"
+            data-cy="gitops-skip-tls-verification-switch"
+            checked={value.TLSSkipVerify || false}
+            onChange={(value) => handleChange({ TLSSkipVerify: value })}
+            name="TLSSkipVerify"
+            tooltip="Enabling this will allow skipping TLS validation for any self-signed certificate."
+            labelClass="col-sm-3 col-lg-2"
+          />
+        </div>
+      </div>
+
       <RefField
         value={value.RepositoryReferenceName || ''}
         onChange={(value) => handleChange({ RepositoryReferenceName: value })}
@@ -117,20 +131,6 @@ export function GitForm({
       )}
 
       <TimeWindowDisplay />
-
-      <div className="form-group">
-        <div className="col-sm-12">
-          <SwitchField
-            label="Skip TLS Verification"
-            data-cy="gitops-skip-tls-verification-switch"
-            checked={value.TLSSkipVerify || false}
-            onChange={(value) => handleChange({ TLSSkipVerify: value })}
-            name="TLSSkipVerify"
-            tooltip="Enabling this will allow skipping TLS validation for any self-signed certificate."
-            labelClass="col-sm-3 col-lg-2"
-          />
-        </div>
-      </div>
     </FormSection>
   );
 

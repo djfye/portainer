@@ -2,6 +2,8 @@ package libstack
 
 import (
 	"context"
+
+	configtypes "github.com/docker/cli/cli/config/types"
 )
 
 type Deployer interface {
@@ -10,7 +12,7 @@ type Deployer interface {
 	//
 	// projectName or filePaths are required
 	// if projectName is supplied filePaths will be ignored
-	Remove(ctx context.Context, projectName string, filePaths []string, options Options) error
+	Remove(ctx context.Context, projectName string, filePaths []string, options RemoveOptions) error
 	Pull(ctx context.Context, filePaths []string, options Options) error
 	Run(ctx context.Context, filePaths []string, serviceName string, options RunOptions) error
 	Validate(ctx context.Context, filePaths []string, options Options) error
@@ -51,6 +53,7 @@ type Options struct {
 	ProjectDir string
 	// ConfigOptions is a list of options to pass to the docker-compose config command
 	ConfigOptions []string
+	Registries    []configtypes.AuthConfig
 }
 
 type DeployOptions struct {
@@ -60,7 +63,8 @@ type DeployOptions struct {
 	// This is useful when running a onetime task.
 	//
 	// When this is set, docker compose will output its logs to stdout
-	AbortOnContainerExit bool ``
+	AbortOnContainerExit bool
+	RemoveOrphans        bool
 }
 
 type RunOptions struct {
@@ -71,4 +75,10 @@ type RunOptions struct {
 	Args []string
 	// Run the container in detached mode
 	Detached bool
+}
+
+type RemoveOptions struct {
+	Options
+
+	Volumes bool
 }

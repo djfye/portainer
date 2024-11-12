@@ -56,8 +56,7 @@ func (handler *Handler) stackMigrate(w http.ResponseWriter, r *http.Request) *ht
 	}
 
 	var payload stackMigratePayload
-	err = request.DecodeAndValidateJSONPayload(r, &payload)
-	if err != nil {
+	if err := request.DecodeAndValidateJSONPayload(r, &payload); err != nil {
 		return httperror.BadRequest("Invalid request payload", err)
 	}
 
@@ -79,8 +78,7 @@ func (handler *Handler) stackMigrate(w http.ResponseWriter, r *http.Request) *ht
 		return httperror.InternalServerError("Unable to find an endpoint with the specified identifier inside the database", err)
 	}
 
-	err = handler.requestBouncer.AuthorizedEndpointOperation(r, endpoint)
-	if err != nil {
+	if err := handler.requestBouncer.AuthorizedEndpointOperation(r, endpoint); err != nil {
 		return httperror.Forbidden("Permission denied to access endpoint", err)
 	}
 
@@ -156,14 +154,12 @@ func (handler *Handler) stackMigrate(w http.ResponseWriter, r *http.Request) *ht
 
 	newName := stack.Name
 	stack.Name = oldName
-	err = handler.deleteStack(securityContext.UserID, stack, endpoint)
-	if err != nil {
+	if err := handler.deleteStack(securityContext.UserID, stack, endpoint); err != nil {
 		return httperror.InternalServerError(err.Error(), err)
 	}
 
 	stack.Name = newName
-	err = handler.DataStore.Stack().Update(stack.ID, stack)
-	if err != nil {
+	if err := handler.DataStore.Stack().Update(stack.ID, stack); err != nil {
 		return httperror.InternalServerError("Unable to persist the stack changes inside the database", err)
 	}
 
@@ -210,10 +206,10 @@ func (handler *Handler) migrateComposeStack(r *http.Request, stack *portainer.St
 	}
 
 	// Deploy the stack
-	err = composeDeploymentConfig.Deploy()
-	if err != nil {
+	if err := composeDeploymentConfig.Deploy(); err != nil {
 		return httperror.InternalServerError(err.Error(), err)
 	}
+
 	return nil
 }
 
@@ -237,8 +233,7 @@ func (handler *Handler) migrateSwarmStack(r *http.Request, stack *portainer.Stac
 	}
 
 	// Deploy the stack
-	err = swarmDeploymentConfig.Deploy()
-	if err != nil {
+	if err := swarmDeploymentConfig.Deploy(); err != nil {
 		return httperror.InternalServerError(err.Error(), err)
 	}
 

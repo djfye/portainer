@@ -42,15 +42,11 @@ func setup(t *testing.T) (*portainer.Stack, *portainer.Endpoint) {
 }
 
 func Test_UpAndDown(t *testing.T) {
-
 	testhelpers.IntegrationTest(t)
 
 	stack, endpoint := setup(t)
 
-	deployer, err := compose.NewComposeDeployer("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	deployer := compose.NewComposeDeployer()
 
 	w, err := NewComposeStackManager(deployer, nil)
 	if err != nil {

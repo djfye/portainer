@@ -1,5 +1,4 @@
 import { SystemBadge } from '@@/Badge/SystemBadge';
-import { UnusedBadge } from '@@/Badge/UnusedBadge';
 
 import { columnHelper } from './helper';
 
@@ -8,9 +7,6 @@ export const name = columnHelper.accessor(
     let result = row.name;
     if (row.isSystem) {
       result += ' system';
-    }
-    if (row.isUnused) {
-      result += ' unused';
     }
     return result;
   },
@@ -21,7 +17,6 @@ export const name = columnHelper.accessor(
       <div className="flex gap-2">
         <div>{row.original.name}</div>
         {row.original.isSystem && <SystemBadge />}
-        {!row.original.isSystem && row.original.isUnused && <UnusedBadge />}
       </div>
     ),
   }

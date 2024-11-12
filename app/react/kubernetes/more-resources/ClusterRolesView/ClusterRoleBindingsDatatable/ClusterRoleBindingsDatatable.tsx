@@ -20,7 +20,7 @@ import { DefaultDatatableSettings } from '../../../datatables/DefaultDatatableSe
 
 import { ClusterRoleBinding } from './types';
 import { columns } from './columns';
-import { useGetClusterRoleBindingsQuery } from './queries/useGetClusterRoleBindingsQuery';
+import { useClusterRoleBindings } from './queries/useClusterRoleBindings';
 import { useDeleteClusterRoleBindingsMutation } from './queries/useDeleteClusterRoleBindingsMutation';
 
 const storageKey = 'clusterRoleBindings';
@@ -29,12 +29,9 @@ const settingsStore = createStore(storageKey);
 export function ClusterRoleBindingsDatatable() {
   const environmentId = useEnvironmentId();
   const tableState = useTableState(settingsStore, storageKey);
-  const clusterRoleBindingsQuery = useGetClusterRoleBindingsQuery(
-    environmentId,
-    {
-      autoRefreshRate: tableState.autoRefreshRate * 1000,
-    }
-  );
+  const clusterRoleBindingsQuery = useClusterRoleBindings(environmentId, {
+    autoRefreshRate: tableState.autoRefreshRate * 1000,
+  });
 
   const filteredClusterRoleBindings = useMemo(
     () =>

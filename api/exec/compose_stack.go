@@ -108,9 +108,11 @@ func (manager *ComposeStackManager) Down(ctx context.Context, stack *portainer.S
 		defer proxy.Close()
 	}
 
-	err = manager.deployer.Remove(ctx, stack.Name, nil, libstack.Options{
-		WorkingDir: "",
-		Host:       url,
+	err = manager.deployer.Remove(ctx, stack.Name, nil, libstack.RemoveOptions{
+		Options: libstack.Options{
+			WorkingDir: "",
+			Host:       url,
+		},
 	})
 
 	return errors.Wrap(err, "failed to remove a stack")
@@ -185,7 +187,7 @@ func createEnvFile(stack *portainer.Stack) (string, error) {
 		return "", err
 	}
 
-	return "stack.env", nil
+	return envFilePath, nil
 }
 
 // copyDefaultEnvFile copies the default .env file if it exists to the provided writer

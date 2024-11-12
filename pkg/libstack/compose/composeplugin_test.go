@@ -1,4 +1,4 @@
-package composeplugin
+package compose
 
 import (
 	"context"
@@ -6,128 +6,79 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/portainer/portainer/pkg/libstack"
+
+	"github.com/stretchr/testify/require"
 )
 
-func checkPrerequisites(t *testing.T) {
-	// if _, err := os.Stat("docker-compose"); errors.Is(err, os.ErrNotExist) {
-	// 	t.Fatal("docker-compose binary not found, please run download.sh and re-run this test suite")
-	// }
-}
-
-func setup(t *testing.T) libstack.Deployer {
-	w, err := NewPluginWrapper("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return w
-}
-
-func Test_NewCommand_SingleFilePath(t *testing.T) {
-	checkPrerequisites(t)
-
-	cmd := newCommand([]string{"up", "-d"}, []string{"docker-compose.yml"})
-	expected := []string{"-f", "docker-compose.yml"}
-	if !reflect.DeepEqual(cmd.globalArgs, expected) {
-		t.Errorf("wrong output args, want: %v, got: %v", expected, cmd.globalArgs)
-	}
-}
-
-func Test_NewCommand_MultiFilePaths(t *testing.T) {
-	checkPrerequisites(t)
-
-	cmd := newCommand([]string{"up", "-d"}, []string{"docker-compose.yml", "docker-compose-override.yml"})
-	expected := []string{"-f", "docker-compose.yml", "-f", "docker-compose-override.yml"}
-	if !reflect.DeepEqual(cmd.globalArgs, expected) {
-		t.Errorf("wrong output args, want: %v, got: %v", expected, cmd.globalArgs)
-	}
-}
-
-func Test_NewCommand_MultiFilePaths_WithSpaces(t *testing.T) {
-	checkPrerequisites(t)
-
-	cmd := newCommand([]string{"up", "-d"}, []string{" docker-compose.yml", "docker-compose-override.yml "})
-	expected := []string{"-f", "docker-compose.yml", "-f", "docker-compose-override.yml"}
-	if !reflect.DeepEqual(cmd.globalArgs, expected) {
-		t.Errorf("wrong output args, want: %v, got: %v", expected, cmd.globalArgs)
-	}
-}
-
 func Test_UpAndDown(t *testing.T) {
-	checkPrerequisites(t)
+	const projectName = "composetest"
 
 	const composeFileContent = `version: "3.9"
 services:
   busybox:
     image: "alpine:3.7"
-    container_name: "plugintest_container_one"`
+    container_name: "composetest_container_one"`
 
 	const overrideComposeFileContent = `version: "3.9"
 services:
   busybox:
     image: "alpine:latest"
-    container_name: "plugintest_container_two"`
+    container_name: "composetest_container_two"`
 
-	const composeContainerName = "plugintest_container_two"
+	composeContainerName := projectName + "_container_two"
 
-	w := setup(t)
+	w := NewComposeDeployer()
 
 	dir := t.TempDir()
 
 	filePathOriginal, err := createFile(dir, "docker-compose.yml", composeFileContent)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	filePathOverride, err := createFile(dir, "docker-compose-override.yml", overrideComposeFileContent)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	projectName := "plugintest"
+	filePaths := []string{filePathOriginal, filePathOverride}
 
 	ctx := context.Background()
-	err = w.Deploy(ctx, []string{filePathOriginal, filePathOverride}, libstack.DeployOptions{
+
+	err = w.Validate(ctx, filePaths, libstack.Options{ProjectName: projectName})
+	require.NoError(t, err)
+
+	err = w.Pull(ctx, filePaths, libstack.Options{ProjectName: projectName})
+	require.NoError(t, err)
+
+	require.False(t, containerExists(composeContainerName))
+
+	err = w.Deploy(ctx, filePaths, libstack.DeployOptions{
 		Options: libstack.Options{
 			ProjectName: projectName,
 		},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if !containerExists(composeContainerName) {
-		t.Fatal("container should exist")
-	}
+	require.True(t, containerExists(composeContainerName))
 
-	err = w.Remove(ctx, projectName, []string{filePathOriginal, filePathOverride}, libstack.Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	waitResult := <-w.WaitForStatus(ctx, projectName, libstack.StatusCompleted, "")
 
-	if containerExists(composeContainerName) {
-		t.Fatal("container should be removed")
-	}
+	require.Empty(t, waitResult.ErrorMsg)
+	require.Equal(t, libstack.StatusCompleted, waitResult.Status)
+
+	err = w.Remove(ctx, projectName, filePaths, libstack.RemoveOptions{})
+	require.NoError(t, err)
+
+	require.False(t, containerExists(composeContainerName))
 }
 
 func createFile(dir, fileName, content string) (string, error) {
 	filePath := filepath.Join(dir, fileName)
-	f, err := os.Create(filePath)
-	if err != nil {
+
+	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 		return "", err
 	}
-
-	_, err = f.WriteString(content)
-	if err != nil {
-		return "", err
-	}
-
-	f.Close()
 
 	return filePath, nil
 }
@@ -143,9 +94,27 @@ func containerExists(containerName string) bool {
 	return strings.Contains(string(out), containerName)
 }
 
-func Test_Config(t *testing.T) {
-	checkPrerequisites(t)
+func Test_Validate(t *testing.T) {
+	invalidComposeFileContent := `invalid-file-content`
 
+	w := NewComposeDeployer()
+
+	dir := t.TempDir()
+
+	filePathOriginal, err := createFile(dir, "docker-compose.yml", invalidComposeFileContent)
+	require.NoError(t, err)
+
+	filePaths := []string{filePathOriginal}
+
+	projectName := "plugintest"
+
+	ctx := context.Background()
+
+	err = w.Validate(ctx, filePaths, libstack.Options{ProjectName: projectName})
+	require.Error(t, err)
+}
+
+func Test_Config(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
 	projectName := "configtest"
@@ -340,32 +309,24 @@ networks:
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			composeFilePath, err := createFile(dir, "docker-compose.yml", tc.composeFileContent)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 
 			envFilePath := ""
 			if tc.envFileContent != "" {
 				envFilePath, err = createFile(dir, "stack.env", tc.envFileContent)
-				if err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 			}
 
-			w := setup(t)
+			w := NewComposeDeployer()
 			actual, err := w.Config(ctx, []string{composeFilePath}, libstack.Options{
 				WorkingDir:    dir,
 				ProjectName:   projectName,
 				EnvFilePath:   envFilePath,
 				ConfigOptions: []string{"--no-path-resolution"},
 			})
-			if err != nil {
-				t.Fatalf("failed to get config: %s. Error: %s", string(actual), err)
-			}
+			require.NoError(t, err)
 
-			if string(actual) != tc.expectFileContent {
-				t.Fatalf("unexpected config output: %s(len=%d), expect: %s(len=%d)", actual, len(actual), tc.expectFileContent, len(tc.expectFileContent))
-			}
+			require.Equal(t, tc.expectFileContent, string(actual))
 		})
 	}
 }

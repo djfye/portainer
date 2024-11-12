@@ -15,12 +15,8 @@ export type ClusterRoleBinding = {
   name: string;
   uid: string;
   namespace: string;
-  resourceVersion: string;
-  creationDate: string;
-  annotations: Record<string, string> | null;
-
   roleRef: ClusterRoleRef;
   subjects: ClusterRoleSubject[] | null;
-
+  creationDate: string;
   isSystem: boolean;
 };

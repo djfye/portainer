@@ -9,7 +9,7 @@ ENV=development
 WEBPACK_CONFIG=webpack/webpack.$(ENV).js
 TAG=local
 
-SWAG=go run github.com/swaggo/swag/cmd/swag@v1.16.2 
+SWAG=go run github.com/swaggo/swag/cmd/swag@v1.16.2
 GOTESTSUM=go run gotest.tools/gotestsum@latest
 
 # Don't change anything below this line unless you know what you're doing
@@ -64,9 +64,6 @@ clean: ## Remove all build and download artifacts
 .PHONY: test test-client test-server
 test: test-server test-client ## Run all tests
 
-test-deps: init-dist
-	./build/download_docker_compose_binary.sh $(PLATFORM) $(ARCH) $(shell jq -r '.dockerCompose' < "./binary-version.json")
-
 test-client: ## Run client tests
 	yarn test $(ARGS)
 
@@ -75,11 +72,11 @@ test-server:	## Run server tests
 
 ##@ Dev
 .PHONY: dev dev-client dev-server
-dev: ## Run both the client and server in development mode	
+dev: ## Run both the client and server in development mode
 	make dev-server
 	make dev-client
 
-dev-client: ## Run the client in development mode 
+dev-client: ## Run the client in development mode
 	yarn dev
 
 dev-server: build-server ## Run the server in development mode
@@ -119,7 +116,7 @@ dev-extension: build-server build-client ## Run the extension in development mod
 ##@ Docs
 .PHONY: docs-build docs-validate docs-clean docs-validate-clean
 docs-build: init-dist ## Build docs
-	cd api && $(SWAG) init -o "../dist/docs" -ot "yaml" -g ./http/handler/handler.go --parseDependency --parseInternal --parseDepth 2 -p pascalcase --markdownFiles ./ 
+	cd api && $(SWAG) init -o "../dist/docs" -ot "yaml" -g ./http/handler/handler.go --parseDependency --parseInternal --parseDepth 2 -p pascalcase --markdownFiles ./
 
 docs-validate: docs-build ## Validate docs
 	yarn swagger2openapi --warnOnly dist/docs/swagger.yaml -o dist/docs/openapi.yaml

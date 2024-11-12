@@ -433,10 +433,7 @@ func buildServer(flags *portainer.CLIFlags) portainer.Server {
 
 	dockerConfigPath := fileService.GetDockerConfigPath()
 
-	composeDeployer, err := compose.NewComposeDeployer(*flags.Assets, dockerConfigPath)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed initializing compose deployer")
-	}
+	composeDeployer := compose.NewComposeDeployer()
 
 	composeStackManager := initComposeStackManager(composeDeployer, proxyManager)
 

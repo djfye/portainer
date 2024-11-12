@@ -1,17 +1,15 @@
-package composeplugin
+package compose
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/portainer/portainer/pkg/libstack"
 
+	"github.com/compose-spec/compose-go/v2/types"
+	"github.com/docker/compose/v2/pkg/api"
 	"github.com/rs/zerolog/log"
-	"github.com/segmentio/encoding/json"
 )
 
 type publisher struct {
@@ -113,14 +111,11 @@ func aggregateStatuses(services []service) (libstack.Status, string) {
 
 }
 
-func (wrapper *PluginWrapper) WaitForStatus(ctx context.Context, name string, status libstack.Status, _ string) <-chan libstack.WaitResult {
+func (c *ComposeDeployer) WaitForStatus(ctx context.Context, name string, status libstack.Status, _ string) <-chan libstack.WaitResult {
 	waitResultCh := make(chan libstack.WaitResult)
-	waitResult := libstack.WaitResult{
-		Status: status,
-	}
+	waitResult := libstack.WaitResult{Status: status}
 
 	go func() {
-	OUTER:
 		for {
 			select {
 			case <-ctx.Done():
@@ -131,49 +126,23 @@ func (wrapper *PluginWrapper) WaitForStatus(ctx context.Context, name string, st
 
 			time.Sleep(1 * time.Second)
 
-			output, err := wrapper.command(newCommand([]string{"ps", "-a", "--format", "json"}, nil), libstack.Options{
-				ProjectName: name,
-			})
-			if len(output) == 0 {
-				log.Debug().
-					Str("project_name", name).
-					Msg("no output from docker compose ps")
+			var containerSummaries []api.ContainerSummary
 
-				if status == libstack.StatusRemoved {
-					waitResultCh <- waitResult
-					return
-				}
+			if err := withComposeService(ctx, nil, libstack.Options{ProjectName: name}, func(composeService api.Service, project *types.Project) error {
+				var err error
+				containerSummaries, err = composeService.Ps(ctx, name, api.PsOptions{All: true})
 
-				continue
-			}
-
-			if err != nil {
+				return err
+			}); err != nil {
 				log.Debug().
 					Str("project_name", name).
 					Err(err).
 					Msg("error from docker compose ps")
+
 				continue
 			}
 
-			var services []service
-			dec := json.NewDecoder(bytes.NewReader(output))
-			for {
-				var svc service
-
-				err := dec.Decode(&svc)
-				if errors.Is(err, io.EOF) {
-					break
-				}
-				if err != nil {
-					log.Debug().
-						Str("project_name", name).
-						Err(err).
-						Msg("failed to parse docker compose output")
-					continue OUTER
-				}
-
-				services = append(services, svc)
-			}
+			services := serviceListFromContainerSummary(containerSummaries)
 
 			if len(services) == 0 && status == libstack.StatusRemoved {
 				waitResultCh <- waitResult
@@ -203,9 +172,42 @@ func (wrapper *PluginWrapper) WaitForStatus(ctx context.Context, name string, st
 				Str("required_status", string(status)).
 				Str("status", string(aggregateStatus)).
 				Msg("waiting for status")
-
 		}
 	}()
 
 	return waitResultCh
+}
+
+func serviceListFromContainerSummary(containerSummaries []api.ContainerSummary) []service {
+	var services []service
+
+	for _, cs := range containerSummaries {
+		var publishers []publisher
+
+		for _, p := range cs.Publishers {
+			publishers = append(publishers, publisher{
+				URL:           p.URL,
+				TargetPort:    p.TargetPort,
+				PublishedPort: p.PublishedPort,
+				Protocol:      p.Protocol,
+			})
+		}
+
+		services = append(services, service{
+			ID:         cs.ID,
+			Name:       cs.Name,
+			Image:      cs.Image,
+			Command:    cs.Command,
+			Project:    cs.Project,
+			Service:    cs.Service,
+			Created:    cs.Created,
+			State:      cs.State,
+			Status:     cs.Status,
+			Health:     cs.Health,
+			ExitCode:   cs.ExitCode,
+			Publishers: publishers,
+		})
+	}
+
+	return services
 }

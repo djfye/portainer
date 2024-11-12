@@ -115,13 +115,19 @@ async function deleteApplications(
   );
 
   // update associated k8s ressources
-  const servicesToDelete = getServicesFromApplications(applications);
+  // helm uninstall will update associated k8s ressources for helm apps, so don't manually delete Helm app associated k8s resources
+  const nonHelmApplications = applications.filter(
+    (app) => app.ApplicationType !== 'Helm'
+  );
+  const servicesToDelete = getServicesFromApplications(nonHelmApplications);
   // axios error handling is done inside deleteServices already
-  await deleteServices({
-    environmentId,
-    data: servicesToDelete,
-  });
-  const hpasToDelete = applications
+  if (Object.keys(servicesToDelete).length > 0) {
+    await deleteServices({
+      environmentId,
+      data: servicesToDelete,
+    });
+  }
+  const hpasToDelete = nonHelmApplications
     .map((app) => app.HorizontalPodAutoscaler)
     .filter((hpa) => !!hpa);
   const settledHpaDeletions = await getAllSettledItems(hpasToDelete, (hpa) =>

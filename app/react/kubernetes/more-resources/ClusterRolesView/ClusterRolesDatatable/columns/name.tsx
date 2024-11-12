@@ -9,9 +9,6 @@ export const name = columnHelper.accessor(
     if (row.isSystem) {
       result += ' system';
     }
-    if (row.isUnused) {
-      result += ' unused';
-    }
     return result;
   },
   {

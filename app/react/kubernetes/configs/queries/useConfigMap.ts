@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { withGlobalError } from '@/react-tools/react-query';
 import axios, { parseAxiosError } from '@/portainer/services/axios';
 import { EnvironmentId } from '@/react/portainer/environments/types';
 
@@ -26,7 +25,7 @@ export function useConfigMap<T = Configuration>(
       select: options?.select,
       enabled: options?.enabled,
       refetchInterval: () => options?.autoRefreshRate ?? false,
-      ...withGlobalError(`Unable to retrieve ConfigMap '${configMap}'`),
+      // handle error from the callers (some callers shouldn't display an error)
     }
   );
 }

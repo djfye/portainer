@@ -14,7 +14,7 @@ export const conditions = columnHelper.accessor((row) => getConditions(row), {
       Conditions
       <Tooltip
         position="top"
-        message="Green indicates the node is healthy. Orange indicates the node is experiencing MemoryPressure, DiskPressure, or PIDPressure."
+        message="Empty indicates the node is healthy. Orange indicates the node is experiencing MemoryPressure, DiskPressure, NetworkUnavailable or PIDPressure."
       />
     </>
   ),
@@ -45,9 +45,9 @@ function ConditionsCell({
 
 function getConditions(node: NodeRowData) {
   return (
-    // exclude the Ready condition as it is already being utilised in the Status column
+    // exclude the Ready condition and search for unhealthy conditions
     node.status?.conditions?.filter(
-      (condition) => condition.type !== 'Ready'
+      (condition) => condition.type !== 'Ready' && condition.status === 'True'
     ) ?? []
   );
 }

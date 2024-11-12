@@ -2,9 +2,12 @@ package cli
 
 import (
 	"context"
+	"fmt"
 
 	portainer "github.com/portainer/portainer/api"
+	"github.com/portainer/portainer/api/http/models/kubernetes"
 	models "github.com/portainer/portainer/api/http/models/kubernetes"
+	"github.com/portainer/portainer/api/internal/errorlist"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -50,18 +53,20 @@ func (kcl *KubeClient) fetchServiceAccounts(namespace string) ([]models.K8sServi
 
 	results := make([]models.K8sServiceAccount, 0)
 	for _, serviceAccount := range serviceAccounts.Items {
-		results = append(results, parseServiceAccount(serviceAccount))
+		results = append(results, kcl.parseServiceAccount(serviceAccount))
 	}
 
 	return results, nil
 }
 
 // parseServiceAccount converts a corev1.ServiceAccount object to a models.K8sServiceAccount object.
-func parseServiceAccount(serviceAccount corev1.ServiceAccount) models.K8sServiceAccount {
+func (kcl *KubeClient) parseServiceAccount(serviceAccount corev1.ServiceAccount) models.K8sServiceAccount {
 	return models.K8sServiceAccount{
 		Name:         serviceAccount.Name,
+		UID:          serviceAccount.UID,
 		Namespace:    serviceAccount.Namespace,
 		CreationDate: serviceAccount.CreationTimestamp.Time,
+		IsSystem:     kcl.isSystemServiceAccount(serviceAccount.Namespace),
 	}
 }
 
@@ -79,6 +84,40 @@ func (kcl *KubeClient) GetPortainerUserServiceAccount(tokenData *portainer.Token
 	}
 
 	return serviceAccount, nil
+}
+
+func (kcl *KubeClient) isSystemServiceAccount(namespace string) bool {
+	return kcl.isSystemNamespace(namespace)
+}
+
+// DeleteServices processes a K8sServiceDeleteRequest by deleting each service
+// in its given namespace.
+func (kcl *KubeClient) DeleteServiceAccounts(reqs kubernetes.K8sServiceAccountDeleteRequests) error {
+	var errors []error
+	for namespace := range reqs {
+		for _, serviceName := range reqs[namespace] {
+			client := kcl.cli.CoreV1().ServiceAccounts(namespace)
+
+			sa, err := client.Get(context.Background(), serviceName, metav1.GetOptions{})
+			if err != nil {
+				if k8serrors.IsNotFound(err) {
+					continue
+				}
+
+				return err
+			}
+
+			if kcl.isSystemServiceAccount(sa.Namespace) {
+				return fmt.Errorf("cannot delete system service account %q", namespace+"/"+serviceName)
+			}
+
+			if err := client.Delete(context.Background(), serviceName, metav1.DeleteOptions{}); err != nil {
+				errors = append(errors, err)
+			}
+		}
+	}
+
+	return errorlist.Combine(errors)
 }
 
 // GetServiceAccountBearerToken returns the ServiceAccountToken associated to the specified user.

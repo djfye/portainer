@@ -125,6 +125,7 @@
                     stack-type="3"
                     on-change="(ctrl.onChangeTemplateId)"
                     value="ctrl.state.templateId"
+                    is-load-failed="ctrl.state.BuildMethod === ctrl.BuildMethods.CUSTOM_TEMPLATE && ctrl.state.templateId && ctrl.state.templateLoadFailed"
                   ></custom-template-selector>
 
                   <custom-templates-variables-field
@@ -132,7 +133,6 @@
                     definitions="ctrl.state.template.Variables"
                     value="ctrl.formValues.Variables"
                     on-change="(ctrl.onChangeTemplateVariables)"
-                    is-load-failed="ctrl.state.BuildMethod === ctrl.BuildMethods.CUSTOM_TEMPLATE && ctrl.state.templateId && ctrl.state.templateLoadFailed"
                   ></custom-templates-variables-field>
                 </div>
 

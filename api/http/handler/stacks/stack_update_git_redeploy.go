@@ -197,16 +197,13 @@ func (handler *Handler) deployStack(r *http.Request, stack *portainer.Stack, pul
 
 	switch stack.Type {
 	case portainer.DockerSwarmStack:
-		prune := false
-		if stack.Option != nil {
-			prune = stack.Option.Prune
-		}
-
 		// Create swarm deployment config
 		securityContext, err := security.RetrieveRestrictedRequestContext(r)
 		if err != nil {
 			return httperror.InternalServerError("Unable to retrieve info from request context", err)
 		}
+
+		prune := stack.Option != nil && stack.Option.Prune
 
 		deploymentConfiger, err = deployments.CreateSwarmStackDeploymentConfig(securityContext, stack, endpoint, handler.DataStore, handler.FileService, handler.StackDeployer, prune, pullImage)
 		if err != nil {

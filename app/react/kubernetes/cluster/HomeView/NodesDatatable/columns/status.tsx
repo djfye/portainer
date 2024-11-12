@@ -36,7 +36,9 @@ function StatusCell({
 
 function getStatus(node: NodeRowData) {
   return (
-    node.status?.conditions?.find((condition) => condition.status === 'True')
-      ?.type ?? 'Not ready'
+    // only look for the ready type to identify if the node is either ready or not ready
+    node.status?.conditions?.find(
+      (condition) => condition.status === 'True' && condition.type === 'Ready'
+    )?.type ?? 'Not Ready'
   );
 }

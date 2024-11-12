@@ -3,13 +3,13 @@ package deployments
 import (
 	"fmt"
 
-	"github.com/rs/zerolog/log"
-
-	"github.com/pkg/errors"
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/dataservices"
 	"github.com/portainer/portainer/api/http/security"
 	"github.com/portainer/portainer/api/stacks/stackutils"
+
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 type ComposeStackDeploymentConfig struct {
@@ -25,7 +25,6 @@ type ComposeStackDeploymentConfig struct {
 }
 
 func CreateComposeStackDeploymentConfig(securityContext *security.RestrictedRequestContext, stack *portainer.Stack, endpoint *portainer.Endpoint, dataStore dataservices.DataStore, fileService portainer.FileService, deployer StackDeployer, forcePullImage, forceCreate bool) (*ComposeStackDeploymentConfig, error) {
-
 	user, err := dataStore.User().Read(securityContext.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load user information from the database: %w", err)
@@ -81,11 +80,11 @@ func (config *ComposeStackDeploymentConfig) Deploy() error {
 		!securitySettings.AllowContainerCapabilitiesForRegularUsers) &&
 		!isAdminOrEndpointAdmin {
 
-		err = stackutils.ValidateStackFiles(config.stack, securitySettings, config.FileService)
-		if err != nil {
+		if err := stackutils.ValidateStackFiles(config.stack, securitySettings, config.FileService); err != nil {
 			return err
 		}
 	}
+
 	if stackutils.IsRelativePathStack(config.stack) {
 		return config.StackDeployer.DeployRemoteComposeStack(config.stack, config.endpoint, config.registries, config.forcePullImage, config.ForceCreate)
 	}
