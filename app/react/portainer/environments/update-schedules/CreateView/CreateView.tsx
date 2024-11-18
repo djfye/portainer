@@ -76,6 +76,10 @@ function CreateView() {
                   Edge Groups
                 </Link>{' '}
                 page to assign environments and create groups.
+                <br />
+                You can upgrade from any agent version to 2.17 or later only.
+                You can not upgrade to an agent version prior to 2.17 . The
+                ability to rollback to originating version is for 2.15.0+ only.
               </TextTip>
 
               <Formik
@@ -95,13 +99,6 @@ function CreateView() {
                       onBlur={handleBlur}
                       error={errors.groupIds}
                     />
-
-                    <TextTip color="blue">
-                      You can upgrade from any agent version to 2.17 or later
-                      only. You can not upgrade to an agent version prior to
-                      2.17 . The ability to rollback to originating version is
-                      for 2.15.0+ only.
-                    </TextTip>
 
                     <div className="mt-2">
                       <ScheduleTypeSelector />

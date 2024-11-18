@@ -78,7 +78,6 @@ export function useGenericRegistriesQuery<T = Registry[]>(
 export async function getRegistries() {
   try {
     const { data } = await axios.get<Registry[]>('/registries');
-
     return data;
   } catch (e) {
     throw parseAxiosError(e as Error, 'Unable to retrieve registries');

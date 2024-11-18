@@ -91,7 +91,7 @@ function ItemView() {
           <Widget>
             <Widget.Title title="Update & Rollback Scheduler" icon={Settings} />
             <Widget.Body>
-              <TextTip color="blue">
+              <TextTip color="blue" className="mb-2">
                 Devices need to be allocated to an Edge group, visit the{' '}
                 <Link
                   to="edge.groups"
@@ -100,6 +100,10 @@ function ItemView() {
                   Edge Groups
                 </Link>{' '}
                 page to assign environments and create groups.
+                <br />
+                You can upgrade from any agent version to 2.17 or later only.
+                You can not upgrade to an agent version prior to 2.17 . The
+                ability to rollback to originating version is for 2.15.0+ only.
               </TextTip>
 
               <Formik
