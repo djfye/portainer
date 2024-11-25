@@ -102,12 +102,18 @@ export function useCreate({
     }
 
     function getBasePayload(values: FormValues): BasePayload {
+      const templateEnvVarsAsPairs = Object.entries(
+        values.templateValues.envVars
+      ).map(([name, value]) => ({
+        name,
+        value,
+      }));
       return {
         userId: user.Id,
         deploymentType: values.deploymentType,
         edgeGroups: values.groupIds,
         name: values.name,
-        envVars: values.envVars,
+        envVars: [...values.envVars, ...templateEnvVarsAsPairs],
         registries: values.privateRegistryId ? [values.privateRegistryId] : [],
         prePullImage: values.prePullImage,
         retryDeploy: values.retryDeploy,

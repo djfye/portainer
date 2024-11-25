@@ -9,6 +9,7 @@ import { CustomTemplate } from '@/react/portainer/templates/custom-templates/typ
 
 import { FormControl } from '@@/form-components/FormControl';
 import { Select as ReactSelect } from '@@/form-components/ReactSelect';
+import { InlineLoader } from '@@/InlineLoader';
 
 import { SelectedTemplateValue } from './types';
 
@@ -16,6 +17,7 @@ export function TemplateSelector({
   value,
   onChange,
   error,
+  isLoadingValues,
 }: {
   value: SelectedTemplateValue;
   onChange: (
@@ -23,6 +25,7 @@ export function TemplateSelector({
     type: 'app' | 'custom' | undefined
   ) => void;
   error?: string;
+  isLoadingValues?: boolean;
 }) {
   const { options, getTemplate, selectedValue } = useOptions(value);
 
@@ -48,6 +51,9 @@ export function TemplateSelector({
         }}
         data-cy="edge-stacks-create-template-selector"
       />
+      {isLoadingValues && (
+        <InlineLoader>Loading template values...</InlineLoader>
+      )}
     </FormControl>
   );
 }

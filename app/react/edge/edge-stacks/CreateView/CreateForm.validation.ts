@@ -18,12 +18,15 @@ import { relativePathValidation } from '@/react/portainer/gitops/RelativePathFie
 import { CustomTemplate } from '@/react/portainer/templates/custom-templates/types';
 import { TemplateViewModel } from '@/react/portainer/templates/app-templates/view-model';
 import { DeployMethod, GitFormModel } from '@/react/portainer/gitops/types';
+import { EnvironmentType } from '@/react/portainer/environments/types';
 
 import { envVarValidation } from '@@/form-components/EnvironmentVariablesFieldset';
 import { file } from '@@/form-components/yup-file-validation';
 
 import { DeploymentType } from '../types';
 import { staggerConfigValidation } from '../components/StaggerFieldset';
+import { createHasEnvironmentTypeFunction } from '../ItemView/EditEdgeStackForm/useEdgeGroupHasType';
+import { useEdgeGroups } from '../../edge-groups/queries/useEdgeGroups';
 
 import { FormValues, Method } from './types';
 import { templateFieldsetValidation } from './TemplateFieldset/validation';
@@ -39,6 +42,8 @@ export function useValidation({
   const { user } = useCurrentUser();
   const gitCredentialsQuery = useGitCredentials(user.Id);
   const nameValidation = useNameValidation();
+  const edgeGroupsQuery = useEdgeGroups();
+  const edgeGroups = edgeGroupsQuery.data;
 
   return useMemo(
     () =>
@@ -53,7 +58,47 @@ export function useValidation({
             .min(1, 'At least one Edge group is required'),
           deploymentType: mixed<DeploymentType>()
             .oneOf([DeploymentType.Compose, DeploymentType.Kubernetes])
-            .required(),
+            .required()
+            .test(
+              'kubernetes-deployment-type-validation',
+              'Kubernetes deployment type is not compatible with the selected edge group(s), which contain Docker environments',
+              (value) => {
+                if (value !== DeploymentType.Kubernetes) {
+                  return true;
+                }
+
+                const hasType = createHasEnvironmentTypeFunction(
+                  values.groupIds,
+                  edgeGroups
+                );
+
+                const hasDockerEndpoint = hasType(
+                  EnvironmentType.EdgeAgentOnDocker
+                );
+
+                return !hasDockerEndpoint;
+              }
+            )
+            .test(
+              'compose-deployment-type-validation',
+              'Compose deployment type is not compatible with the selected edge group(s), which contain Kubernetes environments',
+              (value) => {
+                if (value !== DeploymentType.Compose) {
+                  return true;
+                }
+
+                const hasType = createHasEnvironmentTypeFunction(
+                  values.groupIds,
+                  edgeGroups
+                );
+
+                const hasKubeEndpoint = hasType(
+                  EnvironmentType.EdgeAgentOnKubernetes
+                );
+
+                return !hasKubeEndpoint;
+              }
+            ),
           envVars: envVarValidation(),
           privateRegistryId: number().default(0),
           prePullImage: boolean().default(false),
@@ -92,6 +137,12 @@ export function useValidation({
           useManifestNamespaces: boolean().default(false),
         })
       ),
-    [appTemplate?.Env, customTemplate, gitCredentialsQuery.data, nameValidation]
+    [
+      appTemplate?.Env,
+      customTemplate,
+      edgeGroups,
+      gitCredentialsQuery.data,
+      nameValidation,
+    ]
   );
 }

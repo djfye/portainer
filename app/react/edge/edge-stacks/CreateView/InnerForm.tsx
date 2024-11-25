@@ -3,7 +3,6 @@ import { Form, useFormikContext } from 'formik';
 import { applySetStateAction } from '@/react-tools/apply-set-state-action';
 import { EnvironmentType } from '@/react/portainer/environments/types';
 
-import { TextTip } from '@@/Tip/TextTip';
 import { EnvironmentVariablesPanel } from '@@/form-components/EnvironmentVariablesFieldset';
 import { FormActions } from '@@/form-components/FormActions';
 
@@ -11,7 +10,7 @@ import { EdgeGroupsSelector } from '../components/EdgeGroupsSelector';
 import { EdgeStackDeploymentTypeSelector } from '../components/EdgeStackDeploymentTypeSelector';
 import { StaggerFieldset } from '../components/StaggerFieldset';
 import { PrivateRegistryFieldsetWrapper } from '../ItemView/EditEdgeStackForm/PrivateRegistryFieldsetWrapper';
-import { useValidateEnvironmentTypes } from '../ItemView/EditEdgeStackForm/useEdgeGroupHasType';
+import { useEdgeGroupHasType } from '../ItemView/EditEdgeStackForm/useEdgeGroupHasType';
 import { DeploymentType } from '../types';
 
 import { DockerComposeForm } from './DockerComposeForm';
@@ -38,13 +37,20 @@ export function InnerForm({
 }) {
   const { values, setFieldValue, errors, setValues, setFieldError, isValid } =
     useFormikContext<FormValues>();
-  const { hasType } = useValidateEnvironmentTypes(values.groupIds);
+  const { hasType } = useEdgeGroupHasType(values.groupIds);
 
   const hasKubeEndpoint = hasType(EnvironmentType.EdgeAgentOnKubernetes);
   const hasDockerEndpoint = hasType(EnvironmentType.EdgeAgentOnDocker);
+  const hasMultipleTypes = hasKubeEndpoint && hasDockerEndpoint;
+  const multipleTypesError = hasMultipleTypes
+    ? `There are no available deployment types when there is more than one
+          type of environment in your edge group selection (e.g. Kubernetes and
+          Docker environments). Please select edge groups that have environments
+          of the same type.`
+    : undefined;
 
   return (
-    <Form className="form-horizontal">
+    <Form className="form-horizontal" role="form">
       <NameField
         onChange={(value) => setFieldValue('name', value)}
         value={values.name}
@@ -54,23 +60,15 @@ export function InnerForm({
       <EdgeGroupsSelector
         value={values.groupIds}
         onChange={(value) => setFieldValue('groupIds', value)}
-        error={errors.groupIds}
+        error={errors.groupIds || multipleTypesError}
       />
-
-      {hasKubeEndpoint && hasDockerEndpoint && (
-        <TextTip>
-          There are no available deployment types when there is more than one
-          type of environment in your edge group selection (e.g. Kubernetes and
-          Docker environments). Please select edge groups that have environments
-          of the same type.
-        </TextTip>
-      )}
 
       <EdgeStackDeploymentTypeSelector
         value={values.deploymentType}
         hasDockerEndpoint={hasDockerEndpoint}
         hasKubeEndpoint={hasKubeEndpoint}
         onChange={(value) => setFieldValue('deploymentType', value)}
+        error={errors.deploymentType}
       />
 
       {values.deploymentType === DeploymentType.Compose && (

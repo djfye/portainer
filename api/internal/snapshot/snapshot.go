@@ -10,8 +10,8 @@ import (
 	"github.com/portainer/portainer/api/agent"
 	"github.com/portainer/portainer/api/crypto"
 	"github.com/portainer/portainer/api/dataservices"
-	"github.com/portainer/portainer/api/internal/endpointutils"
 	"github.com/portainer/portainer/api/pendingactions"
+	endpointsutils "github.com/portainer/portainer/pkg/endpoints"
 
 	"github.com/rs/zerolog/log"
 )
@@ -64,7 +64,7 @@ func NewBackgroundSnapshotter(dataStore dataservices.DataStore, tunnelService po
 		}
 
 		for _, e := range endpoints {
-			if !endpointutils.IsEdgeEndpoint(&e) || e.Edge.AsyncMode || !e.UserTrusted {
+			if !endpointsutils.HasDirectConnectivity(&e) {
 				continue
 			}
 

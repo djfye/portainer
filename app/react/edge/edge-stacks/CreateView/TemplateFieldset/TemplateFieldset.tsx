@@ -16,10 +16,12 @@ export function TemplateFieldset({
   values,
   setValues,
   errors,
+  isLoadingValues,
 }: {
   errors?: FormikErrors<Values>;
   values: Values;
   setValues: (values: SetStateAction<Values>) => void;
+  isLoadingValues?: boolean;
 }) {
   return (
     <>
@@ -27,8 +29,9 @@ export function TemplateFieldset({
         error={errors?.templateId}
         value={values}
         onChange={handleChangeTemplate}
+        isLoadingValues={isLoadingValues}
       />
-      {values.templateId && (
+      {values.templateId && !isLoadingValues && (
         <>
           {values.type === 'custom' && (
             <CustomTemplateFieldset

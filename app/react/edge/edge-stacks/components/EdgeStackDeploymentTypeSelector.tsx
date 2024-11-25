@@ -13,6 +13,7 @@ interface Props {
   hasDockerEndpoint: boolean;
   hasKubeEndpoint: boolean;
   allowKubeToSelectCompose?: boolean;
+  error?: string;
 }
 
 export function EdgeStackDeploymentTypeSelector({
@@ -21,6 +22,7 @@ export function EdgeStackDeploymentTypeSelector({
   hasDockerEndpoint,
   hasKubeEndpoint,
   allowKubeToSelectCompose,
+  error,
 }: Props) {
   const deploymentOptions: BoxSelectorOption<DeploymentType>[] = [
     {
@@ -52,6 +54,7 @@ export function EdgeStackDeploymentTypeSelector({
         value={value}
         options={deploymentOptions}
         onChange={onChange}
+        error={error}
       />
     </>
   );

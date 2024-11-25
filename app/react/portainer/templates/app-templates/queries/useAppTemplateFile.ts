@@ -6,9 +6,12 @@ import { AppTemplate } from '../types';
 
 import { buildUrl } from './build-url';
 
-export function useFetchTemplateFile(id?: AppTemplate['id']) {
+export function useAppTemplateFile(
+  id?: AppTemplate['id'],
+  { enabled }: { enabled?: boolean } = {}
+) {
   return useQuery(['templates', id, 'file'], () => fetchFilePreview(id!), {
-    enabled: !!id,
+    enabled: !!id && enabled,
   });
 }
 

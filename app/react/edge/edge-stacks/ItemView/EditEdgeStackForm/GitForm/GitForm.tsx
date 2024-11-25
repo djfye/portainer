@@ -42,7 +42,7 @@ import { FormError } from '@@/form-components/FormError';
 import { EnvironmentVariablesPanel } from '@@/form-components/EnvironmentVariablesFieldset';
 import { EnvVar } from '@@/form-components/EnvironmentVariablesFieldset/types';
 
-import { useValidateEnvironmentTypes } from '../useEdgeGroupHasType';
+import { useEdgeGroupHasType } from '../useEdgeGroupHasType';
 import { PrivateRegistryFieldset } from '../../../components/PrivateRegistryFieldset';
 
 import {
@@ -172,7 +172,7 @@ function InnerForm({
   const { values, setFieldValue, isValid, handleSubmit, errors, dirty } =
     useFormikContext<FormValues>();
 
-  const { hasType } = useValidateEnvironmentTypes(values.groupIds);
+  const { hasType } = useEdgeGroupHasType(values.groupIds);
 
   const hasKubeEndpoint = hasType(EnvironmentType.EdgeAgentOnKubernetes);
   const hasDockerEndpoint = hasType(EnvironmentType.EdgeAgentOnDocker);

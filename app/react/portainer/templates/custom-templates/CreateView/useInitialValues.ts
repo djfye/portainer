@@ -5,7 +5,7 @@ import { useCurrentUser } from '@/react/hooks/useUser';
 import { StackType } from '@/react/common/stacks/types';
 
 import { Platform } from '../../types';
-import { useFetchTemplateFile } from '../../app-templates/queries/useFetchTemplateFile';
+import { useAppTemplateFile } from '../../app-templates/queries/useAppTemplateFile';
 import { getDefaultEdgeTemplateSettings } from '../types';
 
 import { FormValues, Method } from './types';
@@ -31,7 +31,7 @@ export function useInitialValues({
     params: { fileContent = '' },
   } = useCurrentStateAndParams();
 
-  const fileContentQuery = useFetchTemplateFile(appTemplateId);
+  const fileContentQuery = useAppTemplateFile(appTemplateId);
   if (fileContentQuery.isInitialLoading) {
     return undefined;
   }

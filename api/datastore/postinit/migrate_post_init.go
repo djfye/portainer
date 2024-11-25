@@ -11,6 +11,7 @@ import (
 	"github.com/portainer/portainer/api/internal/endpointutils"
 	"github.com/portainer/portainer/api/kubernetes/cli"
 	"github.com/portainer/portainer/api/pendingactions/actions"
+	"github.com/portainer/portainer/pkg/endpoints"
 
 	"github.com/rs/zerolog/log"
 )
@@ -49,17 +50,29 @@ func (postInitMigrator *PostInitMigrator) PostInitMigrate() error {
 
 	for _, environment := range environments {
 		// edge environments will run after the server starts, in pending actions
-		if endpointutils.IsEdgeEndpoint(&environment) {
-			log.Info().Msgf("Adding pending action 'PostInitMigrateEnvironment' for environment %d", environment.ID)
-			err = postInitMigrator.createPostInitMigrationPendingAction(environment.ID)
-			if err != nil {
-				log.Error().Err(err).Msgf("Error creating pending action for environment %d", environment.ID)
+		if endpoints.IsEdgeEndpoint(&environment) {
+			// Skip edge environments that do not have direct connectivity
+			if !endpoints.HasDirectConnectivity(&environment) {
+				continue
+			}
+
+			log.Info().
+				Int("endpoint_id", int(environment.ID)).
+				Msg("adding pending action 'PostInitMigrateEnvironment' for environment")
+
+			if err := postInitMigrator.createPostInitMigrationPendingAction(environment.ID); err != nil {
+				log.Error().
+					Err(err).
+					Int("endpoint_id", int(environment.ID)).
+					Msg("error creating pending action for environment")
 			}
 		} else {
-			// non-edge environments will run before the server starts.
-			err = postInitMigrator.MigrateEnvironment(&environment)
-			if err != nil {
-				log.Error().Err(err).Msgf("Error running post-init migrations for non-edge environment %d", environment.ID)
+			// Non-edge environments will run before the server starts.
+			if err := postInitMigrator.MigrateEnvironment(&environment); err != nil {
+				log.Error().
+					Err(err).
+					Int("endpoint_id", int(environment.ID)).
+					Msg("error running post-init migrations for non-edge environment")
 			}
 		}
 

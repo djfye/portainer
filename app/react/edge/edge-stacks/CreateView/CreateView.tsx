@@ -6,10 +6,10 @@ export function CreateView() {
   return (
     <>
       <PageHeader
-        title="Create Edge stack"
+        title="Create Edge Stack"
         breadcrumbs={[
           { label: 'Edge Stacks', link: 'edge.stacks' },
-          'Create Edge stack',
+          'Create Edge Stack',
         ]}
         reload
       />

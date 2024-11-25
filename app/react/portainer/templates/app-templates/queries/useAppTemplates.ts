@@ -12,6 +12,11 @@ import { TemplateViewModel } from '../view-model';
 
 import { buildUrl } from './build-url';
 
+export type AppTemplatesResponse = {
+  version: string;
+  templates: Array<AppTemplate>;
+};
+
 export function useAppTemplates<T = Array<TemplateViewModel>>({
   environmentId,
   select,
@@ -43,15 +48,10 @@ export function useAppTemplate(
   id: AppTemplate['id'] | undefined,
   { enabled }: { enabled?: boolean } = {}
 ) {
-  const templateListQuery = useAppTemplates({ enabled: !!id && enabled });
-
-  const template = templateListQuery.data?.find((t) => t.Id === id);
-
-  return {
-    data: template,
-    isLoading: templateListQuery.isInitialLoading,
-    error: templateListQuery.error,
-  };
+  return useAppTemplates({
+    enabled: !!id && enabled,
+    select: (templates) => templates.find((t) => t.Id === id),
+  });
 }
 
 async function getTemplatesWithRegistry(
@@ -75,10 +75,7 @@ async function getTemplatesWithRegistry(
 
 export async function getAppTemplates() {
   try {
-    const { data } = await axios.get<{
-      version: string;
-      templates: Array<AppTemplate>;
-    }>(buildUrl());
+    const { data } = await axios.get<AppTemplatesResponse>(buildUrl());
     return data;
   } catch (err) {
     throw parseAxiosError(err);

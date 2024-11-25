@@ -12,7 +12,7 @@ import { getDefaultStaggerConfig } from '../components/StaggerFieldset.types';
 
 import { DockerFormValues, FormValues } from './types';
 
-export function useRenderTemplate(
+export function useRenderCustomTemplate(
   templateValues: DockerFormValues['templateValues'],
   setValues: (values: SetStateAction<DockerFormValues>) => void
 ) {
@@ -69,7 +69,11 @@ export function useRenderTemplate(
     }
   }, [currentTemplateId, setValues, template]);
 
-  return template;
+  return {
+    customTemplate: template,
+    isInitialLoading:
+      templateQuery.isInitialLoading || templateFileQuery.isInitialLoading,
+  };
 }
 
 function getValuesFromTemplate(

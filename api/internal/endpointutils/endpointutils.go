@@ -11,6 +11,8 @@ import (
 	log "github.com/rs/zerolog/log"
 )
 
+// TODO: this file should be migrated to package/server-ce/pkg/endpoints
+
 // IsLocalEndpoint returns true if this is a local environment(endpoint)
 func IsLocalEndpoint(endpoint *portainer.Endpoint) bool {
 	return strings.HasPrefix(endpoint.URL, "unix://") ||

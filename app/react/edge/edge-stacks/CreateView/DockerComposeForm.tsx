@@ -16,9 +16,10 @@ import {
 import { FileUploadForm } from '@@/form-components/FileUpload';
 
 import { TemplateFieldset } from './TemplateFieldset/TemplateFieldset';
-import { useRenderTemplate } from './useRenderTemplate';
+import { useRenderCustomTemplate } from './useRenderCustomTemplate';
 import { DockerFormValues } from './types';
 import { DockerContentField } from './DockerContentField';
+import { useRenderAppTemplate } from './useRenderAppTemplate';
 
 const buildMethods = [editor, upload, git, edgeStackTemplate] as const;
 
@@ -38,7 +39,14 @@ export function DockerComposeForm({
   const { errors, values, setValues } = useFormikContext<DockerFormValues>();
   const { method } = values;
 
-  const template = useRenderTemplate(values.templateValues, setValues);
+  const { customTemplate, isInitialLoading: isCustomTemplateLoading } =
+    useRenderCustomTemplate(values.templateValues, setValues);
+  const { appTemplate, isInitialLoading: isAppTemplateLoading } =
+    useRenderAppTemplate(values.templateValues, setValues);
+
+  const isTemplate =
+    method === edgeStackTemplate.value && (customTemplate || appTemplate);
+  const isTemplateLoading = isCustomTemplateLoading || isAppTemplateLoading;
 
   return (
     <>
@@ -73,15 +81,17 @@ export function DockerComposeForm({
             })
           }
           errors={errors?.templateValues}
+          isLoadingValues={isTemplateLoading}
         />
       )}
 
-      {(method === editor.value ||
-        (method === edgeStackTemplate.value && template)) && (
+      {(method === editor.value || isTemplate) && !isTemplateLoading && (
         <DockerContentField
           value={values.fileContent}
           onChange={(value) => handleChange({ fileContent: value })}
-          readonly={method === edgeStackTemplate.value && !!template?.GitConfig}
+          readonly={
+            method === edgeStackTemplate.value && !!customTemplate?.GitConfig
+          }
           error={errors?.fileContent}
         />
       )}
