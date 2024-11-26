@@ -199,7 +199,7 @@ func (manager *SwarmStackManager) updateDockerCLIConfiguration(configPath string
 
 	config, err := manager.retrieveConfigurationFromDisk(configFilePath)
 	if err != nil {
-		return err
+		log.Warn().Err(err).Msg("unable to retrieve the Swarm configuration from disk, proceeding without it")
 	}
 
 	signature, err := manager.signatureService.CreateSignature(portainer.PortainerAgentSignatureMessage)

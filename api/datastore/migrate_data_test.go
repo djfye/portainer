@@ -109,7 +109,7 @@ func TestMigrateData(t *testing.T) {
 			t.FailNow()
 		}
 
-		migratorParams := store.newMigratorParameters(v)
+		migratorParams := store.newMigratorParameters(v, store.flags)
 		m := migrator.NewMigrator(migratorParams)
 		latestMigrations := m.LatestMigrations()
 

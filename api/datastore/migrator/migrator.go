@@ -33,6 +33,7 @@ import (
 type (
 	// Migrator defines a service to migrate data after a Portainer version update.
 	Migrator struct {
+		flags            *portainer.CLIFlags
 		currentDBVersion *models.Version
 		migrations       []Migrations
 
@@ -62,6 +63,7 @@ type (
 
 	// MigratorParameters represents the required parameters to create a new Migrator instance.
 	MigratorParameters struct {
+		Flags                   *portainer.CLIFlags
 		CurrentDBVersion        *models.Version
 		EndpointGroupService    *endpointgroup.Service
 		EndpointService         *endpoint.Service
@@ -91,6 +93,7 @@ type (
 // NewMigrator creates a new Migrator.
 func NewMigrator(parameters *MigratorParameters) *Migrator {
 	migrator := &Migrator{
+		flags:                   parameters.Flags,
 		currentDBVersion:        parameters.CurrentDBVersion,
 		endpointGroupService:    parameters.EndpointGroupService,
 		endpointService:         parameters.EndpointService,

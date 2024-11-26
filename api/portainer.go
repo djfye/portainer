@@ -133,6 +133,7 @@ type (
 		SecretKeyName             *string
 		LogLevel                  *string
 		LogMode                   *string
+		KubectlShellImage         *string
 	}
 
 	// CustomTemplateVariableDefinition
@@ -1665,6 +1666,8 @@ const (
 	AuthCookieKey = "portainer_api_key"
 	// PortainerCacheHeader is used to enabled FE caching for Kubernetes resources
 	PortainerCacheHeader = "X-Portainer-Cache"
+	// KubectlShellImageEnvVar is the environment variable used to override the default kubectl shell image
+	KubectlShellImageEnvVar = "KUBECTL_SHELL_IMAGE"
 )
 
 // List of supported features

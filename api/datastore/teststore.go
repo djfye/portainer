@@ -29,6 +29,10 @@ func MustNewTestStore(t testing.TB, init, secure bool) (bool, *Store) {
 func NewTestStore(t testing.TB, init, secure bool) (bool, *Store, func(), error) {
 	// Creates unique temp directory in a concurrency friendly manner.
 	storePath := t.TempDir()
+	defaultKubectlShellImage := portainer.DefaultKubectlShellImage
+	flags := &portainer.CLIFlags{
+		KubectlShellImage: &defaultKubectlShellImage,
+	}
 
 	fileService, err := filesystem.NewService(storePath, "")
 	if err != nil {
@@ -45,7 +49,7 @@ func NewTestStore(t testing.TB, init, secure bool) (bool, *Store, func(), error)
 		panic(err)
 	}
 
-	store := NewStore(storePath, fileService, connection)
+	store := NewStore(flags, fileService, connection)
 	newStore, err := store.Open()
 	if err != nil {
 		return newStore, nil, nil, err

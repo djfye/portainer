@@ -42,6 +42,7 @@ import (
 // Store defines the implementation of portainer.DataStore using
 // BoltDB as the storage system.
 type Store struct {
+	flags      *portainer.CLIFlags
 	connection portainer.Connection
 
 	fileService               portainer.FileService

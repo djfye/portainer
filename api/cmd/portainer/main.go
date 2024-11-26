@@ -93,7 +93,7 @@ func initDataStore(flags *portainer.CLIFlags, secretKey []byte, fileService port
 		log.Fatal().Msg("failed creating database connection: expecting a boltdb database type but a different one was received")
 	}
 
-	store := datastore.NewStore(*flags.Data, fileService, connection)
+	store := datastore.NewStore(flags, fileService, connection)
 
 	isNew, err := store.Open()
 	if err != nil {
@@ -120,7 +120,7 @@ func initDataStore(flags *portainer.CLIFlags, secretKey []byte, fileService port
 			log.Fatal().Err(err).Msg("failed generating instance id")
 		}
 
-		migratorInstance := migrator.NewMigrator(&migrator.MigratorParameters{})
+		migratorInstance := migrator.NewMigrator(&migrator.MigratorParameters{Flags: flags})
 		migratorCount := migratorInstance.GetMigratorCountOfCurrentAPIVersion()
 
 		// from MigrateData

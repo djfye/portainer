@@ -48,6 +48,7 @@ func TestMigrateSettings(t *testing.T) {
 	}
 
 	m := migrator.NewMigrator(&migrator.MigratorParameters{
+		Flags:                   store.flags,
 		EndpointGroupService:    store.EndpointGroupService,
 		EndpointService:         store.EndpointService,
 		EndpointRelationService: store.EndpointRelationService,
