@@ -142,6 +142,7 @@ func Test_Config(t *testing.T) {
 		composeFileContent string
 		expectFileContent  string
 		envFileContent     string
+		env                []string
 	}{
 		{
 			name: "compose file with relative path",
@@ -173,7 +174,6 @@ networks:
   default:
     name: configtest_default
 `,
-			envFileContent: "",
 		},
 		{
 			name: "compose file with absolute path",
@@ -205,7 +205,6 @@ networks:
   default:
     name: configtest_default
 `,
-			envFileContent: "",
 		},
 		{
 			name: "compose file with declared volume",
@@ -243,7 +242,6 @@ volumes:
     name: configtest_nginx-data
     driver: local
 `,
-			envFileContent: "",
 		},
 		{
 			name: "compose file with relative path environment variable placeholder",
@@ -254,6 +252,7 @@ volumes:
       - 8019:80
     volumes:
       - ${WEB_HOME}:/usr/share/nginx/html/
+      - ./config/${CONFIG_DIR}:/tmp/config
     env_file:
       - stack.env
 `,
@@ -276,11 +275,17 @@ services:
         target: /usr/share/nginx/html
         bind:
           create_host_path: true
+      - type: bind
+        source: ./config/something
+        target: /tmp/config
+        bind:
+          create_host_path: true
 networks:
   default:
     name: configtest_default
 `,
 			envFileContent: `WEB_HOME=./html`,
+			env:            []string{"CONFIG_DIR=something"},
 		},
 		{
 			name: "compose file with absolute path environment variable placeholder",
@@ -294,7 +299,6 @@ networks:
     env_file:
       - stack.env
 `,
-
 			expectFileContent: `name: configtest
 services:
   nginx:
@@ -336,6 +340,7 @@ networks:
 				WorkingDir:    dir,
 				ProjectName:   projectName,
 				EnvFilePath:   envFilePath,
+				Env:           tc.env,
 				ConfigOptions: []string{"--no-path-resolution"},
 			})
 			require.NoError(t, err)
