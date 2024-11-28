@@ -70,6 +70,10 @@ func withComposeService(
 	return withCli(ctx, options, func(ctx context.Context, cli *command.DockerCli) error {
 		composeService := compose.NewComposeService(cli)
 
+		if len(filePaths) == 0 {
+			return composeFn(composeService, nil)
+		}
+
 		env, err := parseEnvironment(options)
 		if err != nil {
 			return err
@@ -77,14 +81,11 @@ func withComposeService(
 
 		configDetails := types.ConfigDetails{
 			Environment: env,
+			WorkingDir:  filepath.Dir(filePaths[0]),
 		}
 
 		for _, p := range filePaths {
 			configDetails.ConfigFiles = append(configDetails.ConfigFiles, types.ConfigFile{Filename: p})
-		}
-
-		if len(configDetails.ConfigFiles) == 0 {
-			return composeFn(composeService, nil)
 		}
 
 		project, err := loader.LoadWithContext(ctx, configDetails,
@@ -105,7 +106,7 @@ func withComposeService(
 		for i, service := range project.Services {
 			for j, envFile := range service.EnvFiles {
 				if !filepath.IsAbs(envFile.Path) {
-					project.Services[i].EnvFiles[j].Path = filepath.Join(filepath.Dir(filePaths[0]), envFile.Path)
+					project.Services[i].EnvFiles[j].Path = filepath.Join(configDetails.WorkingDir, envFile.Path)
 				}
 			}
 		}
@@ -135,6 +136,10 @@ func (c *ComposeDeployer) Deploy(ctx context.Context, filePaths []string, option
 
 		opts.Create.RemoveOrphans = options.RemoveOrphans
 		opts.Start.CascadeStop = options.AbortOnContainerExit
+
+		if err := composeService.Build(ctx, project, api.BuildOptions{}); err != nil {
+			return fmt.Errorf("compose build operation failed: %w", err)
+		}
 
 		if err := composeService.Up(ctx, project, opts); err != nil {
 			return fmt.Errorf("compose up operation failed: %w", err)
@@ -248,7 +253,7 @@ func addServiceLabels(project *types.Project, oneOff bool) {
 			api.ProjectLabel:     project.Name,
 			api.ServiceLabel:     s.Name,
 			api.VersionLabel:     api.ComposeVersion,
-			api.WorkingDirLabel:  "/",
+			api.WorkingDirLabel:  project.WorkingDir,
 			api.ConfigFilesLabel: strings.Join(project.ComposeFiles, ","),
 			api.OneoffLabel:      oneOffLabel,
 		}
