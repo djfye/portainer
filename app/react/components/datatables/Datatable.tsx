@@ -125,12 +125,13 @@ export function Datatable<D extends DefaultType>({
           pageIndex: page || 0,
         },
         sorting: settings.sortBy ? [settings.sortBy] : [],
+
+        ...initialTableState,
+
         globalFilter: {
           search: settings.search,
           ...initialTableState.globalFilter,
         },
-
-        ...initialTableState,
       },
       defaultColumn: {
         enableColumnFilter: false,
