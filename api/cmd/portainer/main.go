@@ -10,7 +10,6 @@ import (
 
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/apikey"
-	"github.com/portainer/portainer/api/build"
 	"github.com/portainer/portainer/api/chisel"
 	"github.com/portainer/portainer/api/cli"
 	"github.com/portainer/portainer/api/crypto"
@@ -47,6 +46,7 @@ import (
 	"github.com/portainer/portainer/api/platform"
 	"github.com/portainer/portainer/api/scheduler"
 	"github.com/portainer/portainer/api/stacks/deployments"
+	"github.com/portainer/portainer/pkg/build"
 	"github.com/portainer/portainer/pkg/featureflags"
 	"github.com/portainer/portainer/pkg/libhelm"
 	"github.com/portainer/portainer/pkg/libstack/compose"

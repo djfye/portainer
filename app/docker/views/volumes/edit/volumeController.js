@@ -58,6 +58,8 @@ angular.module('portainer.docker').controller('VolumeController', [
 
           var containers = dataContainers.map(function (container) {
             container.volumeData = getVolumeDataFromContainer(container, $scope.volume.Id);
+
+            $scope.volume.NodeName = container.NodeName || '';
             return container;
           });
           $scope.containersUsingVolume = containers;

@@ -14,7 +14,7 @@
                 <button
                   ng-if="showBrowseAction"
                   class="btn btn-xs btn-primary"
-                  ui-sref="docker.volumes.volume.browse({ id: volume.Id, nodeName: volume.NodeName })"
+                  ui-sref="docker.volumes.volume.browse({ id: volume.Name, nodeName: volume.NodeName })"
                   authorization="DockerAgentBrowseList"
                 >
                   <pr-icon icon="'search'" class="leading-none"></pr-icon>

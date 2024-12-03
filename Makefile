@@ -17,11 +17,13 @@ GOTESTSUM=go run gotest.tools/gotestsum@latest
 
 
 ##@ Building
-.PHONY: init-dist build-storybook build build-client build-server build-image devops
+.PHONY: all init-dist build-storybook build build-client build-server build-image devops
 init-dist:
 	@mkdir -p dist
 
-build-all: deps build-server build-client ## Build the client, server and download external dependancies (doesn't build an image)
+all: tidy deps build-server build-client ## Build the client, server and download external dependancies (doesn't build an image)
+
+build-all: all ## Alias for the 'all' target (used by CI)
 
 build-client: init-dist ## Build the client
 	export NODE_ENV=$(ENV) && yarn build --config $(WEBPACK_CONFIG)
@@ -50,7 +52,7 @@ client-deps: ## Install client dependencies
 	yarn
 
 tidy: ## Tidy up the go.mod file
-	cd api && go mod tidy
+	@go mod tidy
 
 
 ##@ Cleanup

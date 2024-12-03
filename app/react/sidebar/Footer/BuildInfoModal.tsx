@@ -3,6 +3,7 @@ import {
   Database,
   GitCommit,
   Hash,
+  Link as LinkIcon,
   Server,
   Tag,
   Variable,
@@ -56,7 +57,8 @@ function BuildInfoModal({ closeModal }: { closeModal: () => void }) {
   }
 
   const { Edition } = statusQuery.data;
-  const { ServerVersion, DatabaseVersion, Build } = versionQuery.data;
+  const { ServerVersion, DatabaseVersion, Build, Dependencies, Runtime } =
+    versionQuery.data;
 
   return (
     <Modal onDismiss={closeModal} aria-label="build-info-modal">
@@ -111,17 +113,39 @@ function BuildInfoModal({ closeModal }: { closeModal: () => void }) {
 
           <div className={styles.tools}>
             <span className="text-muted small">
-              Nodejs v{Build.NodejsVersion}
+              Nodejs {Build.NodejsVersion}
             </span>
             <span className="text-muted small">Yarn v{Build.YarnVersion}</span>
             <span className="text-muted small">
               Webpack v{Build.WebpackVersion}
             </span>
-            <span className="text-muted small">Go v{Build.GoVersion}</span>
+            <span className="text-muted small">Go {Build.GoVersion}</span>
           </div>
         </div>
 
-        {isAdmin && Build.Env && (
+        <div className={clsx(styles.toolsList, 'mt-3')}>
+          <span className="inline-flex items-center">
+            <LinkIcon size="13" className="space-right" />
+            Dependencies:
+          </span>
+
+          <div className={styles.tools}>
+            <span className="text-muted small">
+              Docker {Dependencies.DockerVersion}
+            </span>
+            <span className="text-muted small">
+              Helm {Dependencies.HelmVersion}
+            </span>
+            <span className="text-muted small">
+              Kubectl {Dependencies.KubectlVersion}
+            </span>
+            <span className="text-muted small">
+              Compose {Dependencies.ComposeVersion}
+            </span>
+          </div>
+        </div>
+
+        {isAdmin && Runtime.Env && (
           <div className={clsx(styles.toolsList, 'mt-3')}>
             <span className="inline-flex items-center ">
               <Variable size="13" className="space-right" />
@@ -131,7 +155,7 @@ function BuildInfoModal({ closeModal }: { closeModal: () => void }) {
             <div
               className={clsx(styles.tools, 'max-h-32 space-y-2 overflow-auto')}
             >
-              {Build.Env.map((envVar) => (
+              {Runtime.Env.map((envVar) => (
                 <div key={envVar}>
                   <code>{envVar}</code>
                 </div>

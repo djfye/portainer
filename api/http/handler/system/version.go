@@ -2,12 +2,11 @@ package system
 
 import (
 	"net/http"
-	"os"
 
 	portainer "github.com/portainer/portainer/api"
-	"github.com/portainer/portainer/api/build"
 	"github.com/portainer/portainer/api/http/client"
 	"github.com/portainer/portainer/api/http/security"
+	"github.com/portainer/portainer/pkg/build"
 	httperror "github.com/portainer/portainer/pkg/libhttp/error"
 	"github.com/portainer/portainer/pkg/libhttp/response"
 
@@ -25,18 +24,9 @@ type versionResponse struct {
 	ServerVersion   string
 	ServerEdition   string `json:"ServerEdition" example:"CE/EE"`
 	DatabaseVersion string
-	Build           BuildInfo
-}
-
-type BuildInfo struct {
-	BuildNumber    string
-	ImageTag       string
-	NodejsVersion  string
-	YarnVersion    string
-	WebpackVersion string
-	GoVersion      string
-	GitCommit      string
-	Env            []string `json:",omitempty"`
+	Build           build.BuildInfo
+	Dependencies    build.DependenciesInfo
+	Runtime         build.RuntimeInfo
 }
 
 // @id systemVersion
@@ -59,19 +49,12 @@ func (handler *Handler) version(w http.ResponseWriter, r *http.Request) *httperr
 		ServerVersion:   portainer.APIVersion,
 		DatabaseVersion: portainer.APIVersion,
 		ServerEdition:   portainer.Edition.GetEditionLabel(),
-		Build: BuildInfo{
-			BuildNumber:    build.BuildNumber,
-			ImageTag:       build.ImageTag,
-			NodejsVersion:  build.NodejsVersion,
-			YarnVersion:    build.YarnVersion,
-			WebpackVersion: build.WebpackVersion,
-			GoVersion:      build.GoVersion,
-			GitCommit:      build.GitCommit,
-		},
+		Build:           build.GetBuildInfo(),
+		Dependencies:    build.GetDependenciesInfo(),
 	}
 
 	if isAdmin {
-		result.Build.Env = os.Environ()
+		result.Runtime = build.GetRuntimeInfo()
 	}
 
 	latestVersion := GetLatestVersion()

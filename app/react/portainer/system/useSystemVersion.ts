@@ -22,6 +22,14 @@ export interface VersionResponse {
     WebpackVersion: string;
     GoVersion: string;
     GitCommit: string;
+  };
+  Dependencies: {
+    DockerVersion: string;
+    HelmVersion: string;
+    KubectlVersion: string;
+    ComposeVersion: string;
+  };
+  Runtime: {
     Env?: string[];
   };
 }
