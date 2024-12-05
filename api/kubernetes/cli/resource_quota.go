@@ -49,7 +49,7 @@ func (kcl *KubeClient) fetchResourceQuotasForNonAdmin(namespace string) (*[]core
 func (kcl *KubeClient) fetchResourceQuotas(namespace string) (*[]corev1.ResourceQuota, error) {
 	resourceQuotas, err := kcl.cli.CoreV1().ResourceQuotas(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("an error occured, failed to list resource quotas for the admin user: %w", err)
+		return nil, fmt.Errorf("an error occurred, failed to list resource quotas for the admin user: %w", err)
 	}
 
 	return &resourceQuotas.Items, nil

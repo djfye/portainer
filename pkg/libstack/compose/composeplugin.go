@@ -2,13 +2,16 @@ package compose
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
+	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/pkg/libstack"
 
 	"github.com/compose-spec/compose-go/v2/dotenv"
@@ -21,6 +24,8 @@ import (
 	"github.com/docker/docker/registry"
 	"github.com/rs/zerolog/log"
 )
+
+const PortainerEdgeStackLabel = "io.portainer.edge_stack_id"
 
 var mu sync.Mutex
 
@@ -125,7 +130,7 @@ func withComposeService(
 // Deploy creates and starts containers
 func (c *ComposeDeployer) Deploy(ctx context.Context, filePaths []string, options libstack.DeployOptions) error {
 	return withComposeService(ctx, filePaths, options.Options, func(composeService api.Service, project *types.Project) error {
-		addServiceLabels(project, false)
+		addServiceLabels(project, false, options.EdgeStackID)
 
 		project = project.WithoutUnnecessaryResources()
 
@@ -154,7 +159,7 @@ func (c *ComposeDeployer) Deploy(ctx context.Context, filePaths []string, option
 // Run runs the given service just once, without considering dependencies
 func (c *ComposeDeployer) Run(ctx context.Context, filePaths []string, serviceName string, options libstack.RunOptions) error {
 	return withComposeService(ctx, filePaths, options.Options, func(composeService api.Service, project *types.Project) error {
-		addServiceLabels(project, true)
+		addServiceLabels(project, true, 0)
 
 		for name, service := range project.Services {
 			if name == serviceName {
@@ -242,7 +247,51 @@ func (c *ComposeDeployer) Config(ctx context.Context, filePaths []string, option
 	return payload, nil
 }
 
-func addServiceLabels(project *types.Project, oneOff bool) {
+func (c *ComposeDeployer) GetExistingEdgeStacks(ctx context.Context) ([]libstack.EdgeStack, error) {
+	m := make(map[int]libstack.EdgeStack)
+
+	if err := withComposeService(ctx, nil, libstack.Options{}, func(composeService api.Service, project *types.Project) error {
+		stacks, err := composeService.List(ctx, api.ListOptions{
+			All: true,
+		})
+		if err != nil {
+			return err
+		}
+
+		for _, s := range stacks {
+			summary, err := composeService.Ps(ctx, s.Name, api.PsOptions{All: true})
+			if err != nil {
+				return err
+			}
+
+			for _, cs := range summary {
+				if sid, ok := cs.Labels[PortainerEdgeStackLabel]; ok {
+					id, err := strconv.Atoi(sid)
+					if err != nil {
+						return err
+					}
+
+					if cs.Labels[api.ProjectLabel] == "" {
+						return errors.New("invalid project label")
+					}
+
+					m[id] = libstack.EdgeStack{
+						ID:   id,
+						Name: cs.Labels[api.ProjectLabel],
+					}
+				}
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return slices.Collect(maps.Values(m)), nil
+}
+
+func addServiceLabels(project *types.Project, oneOff bool, edgeStackID portainer.EdgeStackID) {
 	oneOffLabel := "False"
 	if oneOff {
 		oneOffLabel = "True"
@@ -257,6 +306,11 @@ func addServiceLabels(project *types.Project, oneOff bool) {
 			api.ConfigFilesLabel: strings.Join(project.ComposeFiles, ","),
 			api.OneoffLabel:      oneOffLabel,
 		}
+
+		if edgeStackID > 0 {
+			s.CustomLabels.Add(PortainerEdgeStackLabel, strconv.Itoa(int(edgeStackID)))
+		}
+
 		project.Services[i] = s
 	}
 }

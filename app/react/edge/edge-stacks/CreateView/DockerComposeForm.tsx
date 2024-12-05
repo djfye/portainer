@@ -4,6 +4,7 @@ import { GitForm } from '@/react/portainer/gitops/GitForm';
 import { baseEdgeStackWebhookUrl } from '@/portainer/helpers/webhookHelper';
 import { RelativePathFieldset } from '@/react/portainer/gitops/RelativePathFieldset/RelativePathFieldset';
 import { applySetStateAction } from '@/react-tools/apply-set-state-action';
+import { isBE } from '@/react/portainer/feature-flags/feature-flags.service';
 
 import { BoxSelector } from '@@/BoxSelector';
 import { FormSection } from '@@/form-components/FormSection';
@@ -124,21 +125,23 @@ export function DockerComposeForm({
             webhookId={webhookId}
           />
 
-          <FormSection title="Advanced configurations">
-            <RelativePathFieldset
-              values={values.relativePath}
-              gitModel={values.git}
-              onChange={(relativePath) =>
-                setValues((values) => ({
-                  ...values,
-                  relativePath: {
-                    ...values.relativePath,
-                    ...relativePath,
-                  },
-                }))
-              }
-            />
-          </FormSection>
+          {isBE && (
+            <FormSection title="Advanced configurations">
+              <RelativePathFieldset
+                values={values.relativePath}
+                gitModel={values.git}
+                onChange={(relativePath) =>
+                  setValues((values) => ({
+                    ...values,
+                    relativePath: {
+                      ...values.relativePath,
+                      ...relativePath,
+                    },
+                  }))
+                }
+              />
+            </FormSection>
+          )}
         </>
       )}
     </>
