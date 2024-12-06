@@ -2,7 +2,7 @@ import _ from 'lodash';
 import {
   AlertTriangle,
   CheckCircle,
-  type Icon as IconType,
+  type LucideIcon,
   Loader2,
   XCircle,
   MinusCircle,
@@ -51,7 +51,7 @@ function getStatus(
   hasOldVersion: boolean
 ): {
   label: string;
-  icon?: IconType;
+  icon?: LucideIcon;
   spin?: boolean;
   mode?: IconMode;
   tooltip?: string;

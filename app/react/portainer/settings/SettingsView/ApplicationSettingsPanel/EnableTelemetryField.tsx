@@ -1,8 +1,10 @@
 import { useField } from 'formik';
 
 import { SwitchField } from '@@/form-components/SwitchField';
+import { useDocsUrl } from '@@/PageHeader/ContextHelp';
 
 export function EnableTelemetryField() {
+  const privacyPolicy = useDocsUrl('/in-app-analytics-and-privacy-policy');
   const [{ value }, , { setValue }] = useField<boolean>('enableTelemetry');
 
   return (
@@ -20,11 +22,7 @@ export function EnableTelemetryField() {
 
       <div className="col-sm-12 text-muted small mt-2">
         You can find more information about this in our{' '}
-        <a
-          href="https://www.portainer.io/documentation/in-app-analytics-and-privacy-policy/"
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a href={privacyPolicy} target="_blank" rel="noreferrer">
           privacy policy
         </a>
         .

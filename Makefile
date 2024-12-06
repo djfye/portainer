@@ -67,10 +67,10 @@ clean: ## Remove all build and download artifacts
 test: test-server test-client ## Run all tests
 
 test-client: ## Run client tests
-	yarn test $(ARGS)
+	yarn test $(ARGS) --coverage
 
 test-server:	## Run server tests
-	$(GOTESTSUM) --format pkgname-and-test-fails --format-hide-empty-pkg --hide-summary skipped -- -cover  ./...
+	$(GOTESTSUM) --format pkgname-and-test-fails --format-hide-empty-pkg --hide-summary skipped -- -cover -covermode=atomic -coverprofile=coverage.out ./...
 
 ##@ Dev
 .PHONY: dev dev-client dev-server

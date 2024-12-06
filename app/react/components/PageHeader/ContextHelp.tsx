@@ -4,8 +4,7 @@ import { useCurrentStateAndParams } from '@uirouter/react';
 
 import { useSystemVersion } from '@/react/portainer/system/useSystemVersion';
 
-import headerStyles from '../HeaderTitle.module.css';
-import './ContextHelp.css';
+import headerStyles from './HeaderTitle.module.css';
 
 export function ContextHelp() {
   const docsUrl = useDocsUrl();
@@ -18,12 +17,11 @@ export function ContextHelp() {
         color="none"
         className={clsx(
           headerStyles.menuIcon,
-          'menu-icon',
-          'icon-badge mr-1 !p-2 text-lg',
+          'icon-badge mr-1 !p-2 text-lg cursor-pointer',
           'text-gray-8',
           'th-dark:text-gray-warm-7'
         )}
-        title="Help"
+        title="Documentation"
         rel="noreferrer"
         data-cy="context-help-button"
       >

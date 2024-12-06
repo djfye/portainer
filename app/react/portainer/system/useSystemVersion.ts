@@ -13,6 +13,7 @@ export interface VersionResponse {
   // The latest version available
   LatestVersion: string;
   ServerVersion: string;
+  VersionSupport: 'STS' | 'LTS';
   DatabaseVersion: string;
   Build: {
     BuildNumber: string;

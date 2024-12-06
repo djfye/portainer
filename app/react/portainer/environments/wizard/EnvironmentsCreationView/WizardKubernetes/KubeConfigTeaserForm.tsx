@@ -7,7 +7,7 @@ import { FormSectionTitle } from '@@/form-components/FormSectionTitle';
 import { Input } from '@@/form-components/Input';
 import { Button } from '@@/buttons';
 import { TextTip } from '@@/Tip/TextTip';
-import { useDocsUrl } from '@@/PageHeader/ContextHelp/ContextHelp';
+import { useDocsUrl } from '@@/PageHeader/ContextHelp';
 
 const initialValues = {
   kubeConfig: '',

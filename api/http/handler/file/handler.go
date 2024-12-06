@@ -7,7 +7,7 @@ import (
 	"github.com/portainer/portainer/api/http/security"
 	"github.com/portainer/portainer/pkg/featureflags"
 
-	"github.com/gorilla/handlers"
+	"github.com/klauspost/compress/gzhttp"
 )
 
 // Handler represents an HTTP API handler for managing static files.
@@ -20,7 +20,7 @@ type Handler struct {
 func NewHandler(assetPublicPath string, wasInstanceDisabled func() bool) *Handler {
 	h := &Handler{
 		Handler: security.MWSecureHeaders(
-			handlers.CompressHandler(http.FileServer(http.Dir(assetPublicPath))),
+			gzhttp.GzipHandler(http.FileServer(http.Dir(assetPublicPath))),
 			featureflags.IsEnabled("hsts"),
 			featureflags.IsEnabled("csp"),
 		),

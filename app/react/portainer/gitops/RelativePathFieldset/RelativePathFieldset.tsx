@@ -9,7 +9,7 @@ import { SwitchField } from '@@/form-components/SwitchField';
 import { TextTip } from '@@/Tip/TextTip';
 import { FormControl } from '@@/form-components/FormControl';
 import { Input, Select } from '@@/form-components/Input';
-import { useDocsUrl } from '@@/PageHeader/ContextHelp/ContextHelp';
+import { useDocsUrl } from '@@/PageHeader/ContextHelp';
 
 import { RelativePathModel, getPerDevConfigsFilterType } from './types';
 

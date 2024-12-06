@@ -672,6 +672,7 @@
     {
       "Docker": {
         "ContainerCount": 0,
+        "DiagnosticsData": {},
         "DockerSnapshotRaw": {
           "Containers": null,
           "Images": null,

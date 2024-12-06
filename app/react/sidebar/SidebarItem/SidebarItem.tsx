@@ -1,4 +1,4 @@
-import { Icon as IconTest } from 'lucide-react';
+import { type LucideIcon } from 'lucide-react';
 import clsx from 'clsx';
 import { MouseEventHandler, PropsWithChildren } from 'react';
 
@@ -13,7 +13,7 @@ import { SidebarTooltip } from './SidebarTooltip';
 import { useSidebarSrefActive } from './useSidebarSrefActive';
 
 interface Props extends AutomationTestingProps {
-  icon?: IconTest;
+  icon?: LucideIcon;
   to: string;
   params?: object;
   label: string;

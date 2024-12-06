@@ -1,6 +1,14 @@
 package endpoints
 
-import portainer "github.com/portainer/portainer/api"
+import (
+	portainer "github.com/portainer/portainer/api"
+)
+
+// IsRegularAgentEndpoint returns true if this is a regular agent endpoint
+func IsRegularAgentEndpoint(endpoint *portainer.Endpoint) bool {
+	return endpoint.Type == portainer.AgentOnDockerEnvironment ||
+		endpoint.Type == portainer.AgentOnKubernetesEnvironment
+}
 
 // IsEdgeEndpoint returns true if this is an Edge endpoint
 func IsEdgeEndpoint(endpoint *portainer.Endpoint) bool {

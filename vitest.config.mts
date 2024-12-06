@@ -9,7 +9,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./app/setup-tests/setup-msw.ts', './app/setup-tests/stub-modules.ts', './app/setup-tests/setup.ts', './app/setup-tests/setup-rtl.ts'],
     coverage: {
-      reporter: ['text', 'html'],
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],      
       exclude: ['node_modules/', 'app/setup-tests/global-setup.js'],
     },
     bail: 2,
