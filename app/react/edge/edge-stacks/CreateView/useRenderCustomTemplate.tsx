@@ -29,45 +29,36 @@ export function useRenderCustomTemplate(
       enabled: templateValues.type === 'custom',
     }
   );
-  const [renderedFile, setRenderedFile] = useState<string>('');
-
-  useEffect(() => {
-    if (templateFileQuery.data) {
-      const newFile = renderTemplate(
-        templateFileQuery.data,
-        templateValues.variables,
-        template?.Variables || []
-      );
-
-      if (newFile !== renderedFile) {
-        setRenderedFile(newFile);
-        setValues((values) => ({
-          ...values,
-          fileContent: newFile,
-        }));
-      }
-    }
-  }, [
-    renderedFile,
-    setValues,
-    template,
-    templateFileQuery.data,
-    templateValues.variables,
-  ]);
 
   const [currentTemplateId, setCurrentTemplateId] = useState<
     number | undefined
   >(templateValues.templateId);
 
   useEffect(() => {
-    if (template?.Id !== currentTemplateId) {
+    if (templateValues.type === 'custom' && templateFileQuery.data) {
+      const newTemplateValues = getValuesFromTemplate(template);
+      const newFile = renderTemplate(
+        templateFileQuery.data,
+        templateValues.variables,
+        template?.Variables || []
+      );
+
       setCurrentTemplateId(template?.Id);
       setValues((values) => ({
         ...values,
-        ...getValuesFromTemplate(template),
+        ...newTemplateValues,
+        fileContent: newFile,
       }));
     }
-  }, [currentTemplateId, setValues, template]);
+  }, [
+    currentTemplateId,
+    setValues,
+    template,
+    templateFileQuery.data,
+    templateFileQuery.isInitialLoading,
+    templateValues.type,
+    templateValues.variables,
+  ]);
 
   return {
     customTemplate: template,

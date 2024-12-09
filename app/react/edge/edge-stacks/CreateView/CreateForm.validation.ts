@@ -117,7 +117,7 @@ export function useValidation({
           }),
           templateValues: templateFieldsetValidation({
             customVariablesDefinitions: customTemplate?.Variables || [],
-            envVarDefinitions: appTemplate?.Env || [],
+            appTemplateVariablesDefinitions: appTemplate?.Env || [],
           }),
           git: mixed().when('method', {
             is: 'repository',

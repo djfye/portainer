@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 
-import { withError } from '@/react-tools/react-query';
+import { withGlobalError } from '@/react-tools/react-query';
 import { RegistryId } from '@/react/portainer/registries/types/registry';
 import axios, {
   json2formData,
@@ -11,7 +11,7 @@ import { buildUrl } from './buildUrl';
 
 export function useParseRegistries() {
   return useMutation(parseRegistries, {
-    ...withError('Failed parsing registries'),
+    ...withGlobalError('Failed parsing registries'),
   });
 }
 
@@ -23,7 +23,7 @@ export async function parseRegistries({
   fileContent?: string;
 }) {
   if (!file && !fileContent) {
-    throw new Error('File or fileContent must be provided');
+    return [];
   }
 
   let currentFile = file;

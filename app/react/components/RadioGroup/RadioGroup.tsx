@@ -14,7 +14,7 @@ export function RadioGroup<T extends string | number = string>({
   onOptionChange,
 }: Props<T>) {
   return (
-    <div>
+    <div className="flex flex-wrap gap-x-2 gap-y-1">
       {options.map((option) => (
         <label
           key={option.value}

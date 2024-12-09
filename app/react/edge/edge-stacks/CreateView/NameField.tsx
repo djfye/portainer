@@ -17,16 +17,19 @@ export function NameField({
   onChange,
   value,
   errors,
+  placeholder,
 }: {
   onChange(value: string): void;
   value: string;
   errors?: FormikErrors<string>;
+  placeholder?: string;
 }) {
   return (
     <FormControl inputId="name-input" label="Name" errors={errors} required>
       <Input
         id="name-input"
         onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
         value={value}
         required
         data-cy="edgeStackCreate-nameInput"

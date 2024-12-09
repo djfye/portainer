@@ -56,6 +56,7 @@ export function InnerForm({
         onChange={(value) => setFieldValue('name', value)}
         value={values.name}
         errors={errors.name}
+        placeholder="e.g. my-stack"
       />
 
       <EdgeGroupsSelector
@@ -128,13 +129,7 @@ export function InnerForm({
             isEdit={false}
             values={values.staggerConfig}
             onChange={(newStaggerValues) =>
-              setValues((values) => ({
-                ...values,
-                staggerConfig: {
-                  ...values.staggerConfig,
-                  ...newStaggerValues,
-                },
-              }))
+              setFieldValue('staggerConfig', newStaggerValues)
             }
           />
         </>

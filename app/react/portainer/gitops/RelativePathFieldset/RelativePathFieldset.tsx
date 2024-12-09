@@ -78,6 +78,7 @@ export function RelativePathFieldset({
               <FormControl
                 label="Local filesystem path"
                 errors={errors?.FilesystemPath}
+                required
               >
                 <Input
                   name="FilesystemPath"
@@ -142,6 +143,7 @@ export function RelativePathFieldset({
                     <FormControl
                       label="Local filesystem path"
                       errors={errors?.FilesystemPath}
+                      required
                     >
                       <Input
                         name="FilesystemPath"
@@ -174,6 +176,7 @@ export function RelativePathFieldset({
                     label="Directory"
                     errors={errors?.PerDeviceConfigsPath}
                     inputId="per_device_configs_path_input"
+                    required
                   >
                     <PathSelector
                       value={value.PerDeviceConfigsPath || ''}

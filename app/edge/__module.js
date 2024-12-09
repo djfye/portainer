@@ -74,6 +74,10 @@ angular
       data: {
         docs: '/user/edge/stacks/add',
       },
+      params: {
+        templateId: { dynamic: true },
+        templateType: { dynamic: true },
+      },
     };
 
     const stacksEdit = {

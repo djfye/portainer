@@ -29,45 +29,36 @@ export function useRenderAppTemplate(
   const templateFileQuery = useAppTemplateFile(templateValues.templateId, {
     enabled: templateValues.type === 'app',
   });
-  const [renderedFile, setRenderedFile] = useState<string>('');
-
-  useEffect(() => {
-    if (templateFileQuery.data) {
-      const newFile = renderTemplate(
-        templateFileQuery.data,
-        templateValues.variables,
-        []
-      );
-
-      if (newFile !== renderedFile) {
-        setRenderedFile(newFile);
-        setValues((values) => ({
-          ...values,
-          fileContent: newFile,
-        }));
-      }
-    }
-  }, [
-    renderedFile,
-    setValues,
-    template,
-    templateFileQuery.data,
-    templateValues.variables,
-  ]);
 
   const [currentTemplateId, setCurrentTemplateId] = useState<
     number | undefined
   >(templateValues.templateId);
 
   useEffect(() => {
-    if (template?.Id !== currentTemplateId) {
+    if (templateValues.type === 'app' && templateFileQuery.data) {
+      const newTemplateValues = getValuesFromAppTemplate(template);
+      const newFile = renderTemplate(
+        templateFileQuery.data,
+        templateValues.variables,
+        []
+      );
+
       setCurrentTemplateId(template?.Id);
       setValues((values) => ({
         ...values,
-        ...getValuesFromAppTemplate(template),
+        ...newTemplateValues,
+        fileContent: newFile,
       }));
     }
-  }, [currentTemplateId, setValues, template]);
+  }, [
+    currentTemplateId,
+    setValues,
+    template,
+    templateFileQuery.data,
+    templateFileQuery.isInitialLoading,
+    templateValues.type,
+    templateValues.variables,
+  ]);
 
   return {
     appTemplate: template,

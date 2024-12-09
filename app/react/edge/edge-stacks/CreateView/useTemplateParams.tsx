@@ -1,43 +1,29 @@
-import { useRouter } from '@uirouter/react';
-
-import { useParamState } from '@/react/hooks/useParamState';
+import { useParamsState } from '@/react/hooks/useParamState';
 
 export function useTemplateParams() {
-  const router = useRouter();
-  const [id] = useParamState('templateId', (param) => {
-    if (!param) {
-      return undefined;
-    }
+  const [{ id, type }, setTemplateParams] = useParamsState(
+    ['templateId', 'templateType'],
+    (params) => ({
+      id: parseTemplateId(params.templateId),
+      type: parseTemplateType(params.templateType),
+    })
+  );
 
-    const templateId = parseInt(param, 10);
-    if (Number.isNaN(templateId)) {
-      return undefined;
-    }
+  return [{ id, type }, setTemplateParams] as const;
+}
 
-    return templateId;
-  });
-
-  const [type] = useParamState('templateType', (param) => {
-    if (param === 'app' || param === 'custom') {
-      return param;
-    }
-
+function parseTemplateId(param?: string) {
+  if (!param) {
     return undefined;
-  });
-
-  return [{ id, type }, handleChange] as const;
-
-  function handleChange({
-    id,
-    type,
-  }: {
-    id: number | undefined;
-    type: 'app' | 'custom' | undefined;
-  }) {
-    router.stateService.go(
-      '.',
-      { templateId: id, templateType: type },
-      { reload: false }
-    );
   }
+
+  return parseInt(param, 10);
+}
+
+function parseTemplateType(param?: string): 'app' | 'custom' | undefined {
+  if (param === 'app' || param === 'custom') {
+    return param;
+  }
+
+  return undefined;
 }

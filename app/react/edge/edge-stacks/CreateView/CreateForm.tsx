@@ -1,5 +1,5 @@
 import { Formik } from 'formik';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import { toGitFormModel } from '@/react/portainer/gitops/types';
 import { getDefaultRelativePathModel } from '@/react/portainer/gitops/RelativePathFieldset/types';
@@ -18,12 +18,12 @@ import { DeploymentType } from '../types';
 import { getDefaultStaggerConfig } from '../components/StaggerFieldset.types';
 
 import { InnerForm } from './InnerForm';
-import { FormValues } from './types';
 import { useValidation } from './CreateForm.validation';
 import { Values as TemplateValues } from './TemplateFieldset/types';
 import { getInitialTemplateValues } from './TemplateFieldset/TemplateFieldset';
 import { useTemplateParams } from './useTemplateParams';
 import { useCreate } from './useCreate';
+import { FormValues } from './types';
 
 export function CreateForm() {
   const [webhookId] = useState(() => createWebhookId());
@@ -38,32 +38,11 @@ export function CreateForm() {
     templateType: templateParams.type,
   });
 
-  if (
-    templateParams.id &&
-    !(templateQuery.customTemplate || templateQuery.appTemplate)
-  ) {
+  const initialValues = useInitialValues(templateQuery, templateParams);
+
+  if (!initialValues) {
     return null;
   }
-
-  const template = templateQuery.customTemplate || templateQuery.appTemplate;
-
-  const initialValues: FormValues = {
-    name: '',
-    groupIds: [],
-    deploymentType: DeploymentType.Compose,
-    envVars: [],
-    privateRegistryId: 0,
-    prePullImage: false,
-    retryDeploy: false,
-    staggerConfig: getDefaultStaggerConfig(),
-    method: templateParams.id ? 'template' : 'editor',
-    git: toGitFormModel(undefined, parseAutoUpdateResponse()),
-    relativePath: getDefaultRelativePathModel(),
-    enableWebhook: false,
-    fileContent: '',
-    templateValues: getTemplateValues(templateParams.type, template),
-    useManifestNamespaces: false,
-  };
 
   return (
     <div className="row">
@@ -128,7 +107,66 @@ function useTemplate(
   });
 
   return {
-    appTemplate: appTemplateQuery.data,
-    customTemplate: customTemplateQuery.data,
+    appTemplate: type === 'app' ? appTemplateQuery.data : undefined,
+    customTemplate: type === 'custom' ? customTemplateQuery.data : undefined,
   };
+}
+
+function useInitialValues(
+  templateQuery: {
+    appTemplate: TemplateViewModel | undefined;
+    customTemplate: CustomTemplate | undefined;
+  },
+  templateParams: {
+    id: number | undefined;
+    type: 'app' | 'custom' | undefined;
+  }
+) {
+  const template = templateQuery.customTemplate || templateQuery.appTemplate;
+  const initialValues: FormValues = useMemo(
+    () => ({
+      name: '',
+      groupIds: [],
+      // if edge custom templates allow kube manifests/helm charts in future, add logic for setting this for the initial deploymentType
+      deploymentType: DeploymentType.Compose,
+      envVars: [],
+      privateRegistryId:
+        templateQuery.customTemplate?.EdgeSettings?.PrivateRegistryId ?? 0,
+      prePullImage:
+        templateQuery.customTemplate?.EdgeSettings?.PrePullImage ?? false,
+      retryDeploy:
+        templateQuery.customTemplate?.EdgeSettings?.RetryDeploy ?? false,
+      staggerConfig:
+        templateQuery.customTemplate?.EdgeSettings?.StaggerConfig ??
+        getDefaultStaggerConfig(),
+      method: templateParams.id ? 'template' : 'editor',
+      git: toGitFormModel(
+        templateQuery.customTemplate?.GitConfig,
+        parseAutoUpdateResponse()
+      ),
+      relativePath:
+        templateQuery.customTemplate?.EdgeSettings?.RelativePathSettings ??
+        getDefaultRelativePathModel(),
+      enableWebhook: false,
+      fileContent: '',
+      templateValues: getTemplateValues(templateParams.type, template),
+      useManifestNamespaces: false,
+    }),
+    [
+      templateQuery.customTemplate,
+      templateParams.id,
+      templateParams.type,
+      template,
+    ]
+  );
+
+  if (
+    templateParams.id &&
+    !templateQuery.customTemplate &&
+    !templateQuery.appTemplate
+  ) {
+    return null;
+  }
+
+  return initialValues;
 }

@@ -9,14 +9,14 @@ import { Values } from './types';
 
 export function templateFieldsetValidation({
   customVariablesDefinitions,
-  envVarDefinitions,
+  appTemplateVariablesDefinitions,
 }: {
-  customVariablesDefinitions: VariableDefinition[];
-  envVarDefinitions: Array<TemplateEnv>;
+  customVariablesDefinitions: Array<VariableDefinition>;
+  appTemplateVariablesDefinitions: Array<TemplateEnv>;
 }): SchemaOf<Values> {
   return object({
     type: mixed<'app' | 'custom'>().oneOf(['custom', 'app']).optional(),
-    envVars: envVarsFieldsetValidation(envVarDefinitions)
+    envVars: envVarsFieldsetValidation(appTemplateVariablesDefinitions)
       .optional()
       .when('type', {
         is: 'app',

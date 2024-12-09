@@ -1,6 +1,5 @@
 import { number, string, object, SchemaOf } from 'yup';
 import { FormikErrors } from 'formik';
-import { useState, useEffect } from 'react';
 
 import { FormSection } from '@@/form-components/FormSection';
 import { RadioGroup } from '@@/RadioGroup/RadioGroup';
@@ -36,19 +35,11 @@ const staggerOptions = [
 ] as const;
 
 export function StaggerFieldset({
-  values: initialValue,
+  values,
   onChange,
   errors,
   isEdit = true,
 }: Props) {
-  const [values, setControlledValues] = useState(initialValue); // TODO: remove this state when form is not inside angularjs
-
-  useEffect(() => {
-    if (!!initialValue && initialValue.StaggerOption !== values.StaggerOption) {
-      setControlledValues(initialValue);
-    }
-  }, [initialValue, values]);
-
   return (
     <FormSection title="Update configurations">
       {!isEdit && (
@@ -208,7 +199,7 @@ export function StaggerFieldset({
 
   function handleChange(partialValue: Partial<StaggerConfig>) {
     onChange(partialValue);
-    setControlledValues((values) => ({ ...values, ...partialValue }));
+    // setControlledValues((values) => ({ ...values, ...partialValue }));
   }
 }
 
