@@ -13,9 +13,9 @@ import (
 	"github.com/portainer/portainer/pkg/libhttp/request"
 	"github.com/portainer/portainer/pkg/libhttp/response"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/rs/zerolog/log"
@@ -131,7 +131,7 @@ func (handler *Handler) PullAndRunContainer(ctx context.Context, endpoint *porta
 // TODO: add k8s implementation
 // TODO: work out registry auth
 func pullImage(ctx context.Context, docker *client.Client, imageName string) error {
-	out, err := docker.ImagePull(ctx, imageName, types.ImagePullOptions{})
+	out, err := docker.ImagePull(ctx, imageName, image.PullOptions{})
 	if err != nil {
 		log.Error().Str("image_name", imageName).Err(err).Msg("could not pull image from registry")
 

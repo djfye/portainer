@@ -40,6 +40,7 @@ type Connection interface {
 	GetDatabaseFileName() string
 	GetDatabaseFilePath() string
 	GetStorePath() string
+	GetDatabaseFileSize() (int64, error)
 
 	IsEncryptedStore() bool
 	NeedsEncryptionMigration() (bool, error)

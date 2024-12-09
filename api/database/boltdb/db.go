@@ -62,6 +62,15 @@ func (connection *DbConnection) GetStorePath() string {
 	return connection.Path
 }
 
+func (connection *DbConnection) GetDatabaseFileSize() (int64, error) {
+	file, err := os.Stat(connection.GetDatabaseFilePath())
+	if err != nil {
+		return 0, fmt.Errorf("Failed to stat database file path: %s err: %w", connection.GetDatabaseFilePath(), err)
+	}
+
+	return file.Size(), nil
+}
+
 func (connection *DbConnection) SetEncrypted(flag bool) {
 	connection.isEncrypted = flag
 }

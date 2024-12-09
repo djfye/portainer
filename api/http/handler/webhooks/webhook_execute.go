@@ -13,6 +13,7 @@ import (
 	"github.com/portainer/portainer/pkg/libhttp/response"
 
 	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 )
 
 // @summary Execute a webhook
@@ -79,16 +80,16 @@ func (handler *Handler) executeServiceWebhook(
 
 	service.Spec.TaskTemplate.ForceUpdate++
 
-	var imageName = strings.Split(service.Spec.TaskTemplate.ContainerSpec.Image, "@sha")[0]
+	imageName := strings.Split(service.Spec.TaskTemplate.ContainerSpec.Image, "@sha")[0]
+	service.Spec.TaskTemplate.ContainerSpec.Image = imageName
 
 	if imageTag != "" {
-		var tagIndex = strings.LastIndex(imageName, ":")
+		tagIndex := strings.LastIndex(imageName, ":")
 		if tagIndex == -1 {
 			tagIndex = len(imageName)
 		}
+
 		service.Spec.TaskTemplate.ContainerSpec.Image = imageName[:tagIndex] + ":" + imageTag
-	} else {
-		service.Spec.TaskTemplate.ContainerSpec.Image = imageName
 	}
 
 	serviceUpdateOptions := dockertypes.ServiceUpdateOptions{
@@ -109,8 +110,9 @@ func (handler *Handler) executeServiceWebhook(
 			}
 		}
 	}
+
 	if imageTag != "" {
-		rc, err := dockerClient.ImagePull(context.Background(), service.Spec.TaskTemplate.ContainerSpec.Image, dockertypes.ImagePullOptions{RegistryAuth: serviceUpdateOptions.EncodedRegistryAuth})
+		rc, err := dockerClient.ImagePull(context.Background(), service.Spec.TaskTemplate.ContainerSpec.Image, image.PullOptions{RegistryAuth: serviceUpdateOptions.EncodedRegistryAuth})
 		if err != nil {
 			return httperror.NotFound("Error pulling image with the specified tag", err)
 		}

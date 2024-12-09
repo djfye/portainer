@@ -11,8 +11,8 @@ import (
 	"github.com/portainer/portainer/pkg/libhttp/request"
 	"github.com/portainer/portainer/pkg/libhttp/response"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 )
 
 type ImageResponse struct {
@@ -46,7 +46,7 @@ func (handler *Handler) imagesList(w http.ResponseWriter, r *http.Request) *http
 		return httpErr
 	}
 
-	images, err := cli.ImageList(r.Context(), types.ImageListOptions{})
+	images, err := cli.ImageList(r.Context(), image.ListOptions{})
 	if err != nil {
 		return httperror.InternalServerError("Unable to retrieve Docker images", err)
 	}

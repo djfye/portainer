@@ -140,7 +140,10 @@ func (c *ComposeDeployer) Deploy(ctx context.Context, filePaths []string, option
 		}
 
 		opts.Create.RemoveOrphans = options.RemoveOrphans
-		opts.Start.CascadeStop = options.AbortOnContainerExit
+
+		if options.AbortOnContainerExit {
+			opts.Start.OnExit = api.CascadeStop
+		}
 
 		if err := composeService.Build(ctx, project, api.BuildOptions{}); err != nil {
 			return fmt.Errorf("compose build operation failed: %w", err)

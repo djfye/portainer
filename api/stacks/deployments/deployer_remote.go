@@ -15,6 +15,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/system"
 	dockerclient "github.com/docker/docker/client"
@@ -170,9 +171,9 @@ func (d *stackDeployer) remoteStack(stack *portainer.Stack, endpoint *portainer.
 	}
 	defer cli.Close()
 
-	image := getUnpackerImage()
+	unpackerImg := getUnpackerImage()
 
-	reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{})
+	reader, err := cli.ImagePull(ctx, unpackerImg, image.PullOptions{})
 	if err != nil {
 		return errors.Wrap(err, "unable to pull unpacker image")
 	}
@@ -197,12 +198,12 @@ func (d *stackDeployer) remoteStack(stack *portainer.Stack, endpoint *portainer.
 	}
 
 	log.Debug().
-		Str("image", image).
+		Str("image", unpackerImg).
 		Str("cmd", strings.Join(cmd, " ")).
 		Msg("running unpacker")
 
 	unpackerContainer, err := cli.ContainerCreate(ctx, &container.Config{
-		Image: image,
+		Image: unpackerImg,
 		Cmd:   cmd,
 	}, &container.HostConfig{
 		Binds: []string{
