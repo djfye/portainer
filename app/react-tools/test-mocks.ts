@@ -78,6 +78,11 @@ export function createMockEnvironment(): Environment {
     URL: 'url',
     Snapshots: [],
     Kubernetes: {
+      Flags: {
+        IsServerMetricsDetected: true,
+        IsServerIngressClassDetected: true,
+        IsServerStorageDetected: true,
+      },
       Snapshots: [],
       Configuration: {
         IngressClasses: [],
@@ -85,6 +90,9 @@ export function createMockEnvironment(): Environment {
         AllowNoneIngressClass: false,
       },
     },
+    UserAccessPolicies: {},
+    TeamAccessPolicies: {},
+    ComposeSyntaxMaxVersion: '0',
     EdgeKey: '',
     EnableGPUManagement: false,
     Id: 3,

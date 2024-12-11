@@ -9,6 +9,7 @@ import (
 	"github.com/portainer/portainer/api/filesystem"
 	gittypes "github.com/portainer/portainer/api/git/types"
 	httperrors "github.com/portainer/portainer/api/http/errors"
+	"github.com/portainer/portainer/pkg/edge"
 	"github.com/portainer/portainer/pkg/libhttp/request"
 
 	"github.com/asaskevich/govalidator"
@@ -17,7 +18,11 @@ import (
 
 type edgeStackFromGitRepositoryPayload struct {
 	// Name of the stack
-	Name string `example:"myStack" validate:"required"`
+	// Max length: 255
+	// Name must only contains lowercase characters, numbers, hyphens, or underscores
+	// Name must start with a lowercase character or number
+	// Example: stack-name or stack_123 or stackName
+	Name string `example:"stack-name" validate:"required"`
 	// URL of a Git repository hosting the Stack file
 	RepositoryURL string `example:"https://github.com/openfaas/faas" validate:"required"`
 	// Reference name of a Git repository hosting the Stack file
@@ -48,6 +53,10 @@ type edgeStackFromGitRepositoryPayload struct {
 func (payload *edgeStackFromGitRepositoryPayload) Validate(r *http.Request) error {
 	if len(payload.Name) == 0 {
 		return httperrors.NewInvalidPayloadError("Invalid stack name")
+	}
+
+	if !edge.IsValidEdgeStackName(payload.Name) {
+		return httperrors.NewInvalidPayloadError("Invalid stack name. Stack name must only consist of lowercase alpha characters, numbers, hyphens, or underscores as well as start with a lowercase character or number")
 	}
 
 	if len(payload.RepositoryURL) == 0 || !govalidator.IsURL(payload.RepositoryURL) {

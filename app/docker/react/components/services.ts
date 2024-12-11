@@ -31,6 +31,7 @@ const ngModule = angular
       'isStackColumnVisible',
       'onRefresh',
       'titleIcon',
+      'tableKey',
     ])
   );
 

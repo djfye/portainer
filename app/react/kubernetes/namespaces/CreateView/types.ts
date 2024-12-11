@@ -4,7 +4,7 @@ import { IngressControllerClassMap } from '../../cluster/ingressClass/types';
 import {
   ResourceQuotaFormValues,
   ResourceQuotaPayload,
-} from '../components/ResourceQuotaFormSection/types';
+} from '../components/NamespaceForm/ResourceQuotaFormSection/types';
 
 export type CreateNamespaceFormValues = {
   name: string;

@@ -1,3 +1,20 @@
+export type PodMetrics = {
+  items: PodMetric[];
+};
+
+export type PodMetric = {
+  containers: ContainerMetric[];
+};
+
+type ContainerMetric = {
+  usage: ResourceUsage;
+};
+
+type ResourceUsage = {
+  cpu: string;
+  memory: string;
+};
+
 export type NodeMetrics = {
   items: NodeMetric[];
 };

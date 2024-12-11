@@ -329,9 +329,6 @@ type (
 		DeploymentType EdgeStackDeploymentType `json:"DeploymentType"`
 		// Uses the manifest's namespaces instead of the default one
 		UseManifestNamespaces bool
-
-		// Deprecated
-		Prune bool `json:"Prune,omitempty"`
 	}
 
 	EdgeStackDeploymentType int
@@ -611,6 +608,7 @@ type (
 		Id             string                 `json:"Id"`
 		Name           string                 `json:"Name"`
 		Status         corev1.NamespaceStatus `json:"Status"`
+		Annotations    map[string]string      `json:"Annotations"`
 		CreationDate   string                 `json:"CreationDate"`
 		NamespaceOwner string                 `json:"NamespaceOwner"`
 		IsSystem       bool                   `json:"IsSystem"`

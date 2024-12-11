@@ -5,7 +5,6 @@ import { debounce } from 'lodash';
 
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
 import { useK8sSecrets } from '@/react/kubernetes/configs/queries/useK8sSecrets';
-import { useNamespaceServices } from '@/react/kubernetes/networks/services/queries';
 import { notifyError, notifySuccess } from '@/portainer/services/notifications';
 import { useAuthorizations } from '@/react/hooks/useUser';
 import { Annotation } from '@/react/kubernetes/annotations/types';
@@ -24,6 +23,7 @@ import {
   useUpdateIngress,
   useIngressControllers,
 } from '../queries';
+import { useNamespaceServices } from '../../services/useNamespaceServices';
 
 import {
   Rule,
@@ -410,13 +410,13 @@ export function CreateIngressView() {
       const duplicatedAnnotations: string[] = [];
       const re = /^([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$/;
       rule.Annotations?.forEach((a, i) => {
-        if (!a.Key) {
+        if (!a.key) {
           errors[`annotations.key[${i}]`] = 'Key is required.';
-        } else if (duplicatedAnnotations.includes(a.Key)) {
+        } else if (duplicatedAnnotations.includes(a.key)) {
           errors[`annotations.key[${i}]`] =
             'Key is a duplicate of an existing one.';
         } else {
-          const key = a.Key.split('/');
+          const key = a.key.split('/');
           if (key.length > 2) {
             errors[`annotations.key[${i}]`] =
               'Two segments are allowed, separated by a slash (/): a prefix (optional) and a name.';
@@ -441,10 +441,10 @@ export function CreateIngressView() {
             }
           }
         }
-        if (!a.Value) {
+        if (!a.value) {
           errors[`annotations.value[${i}]`] = 'Value is required.';
         }
-        duplicatedAnnotations.push(a.Key);
+        duplicatedAnnotations.push(a.key);
       });
 
       const duplicatedHosts: string[] = [];
@@ -677,7 +677,7 @@ export function CreateIngressView() {
 
   function handleAnnotationChange(
     index: number,
-    key: 'Key' | 'Value',
+    key: 'key' | 'value',
     val: string
   ) {
     setIngressRule((prevRules) => {
@@ -685,8 +685,8 @@ export function CreateIngressView() {
 
       rules.Annotations = rules.Annotations || [];
       rules.Annotations[index] = rules.Annotations[index] || {
-        Key: '',
-        Value: '',
+        key: '',
+        value: '',
       };
       rules.Annotations[index][key] = val;
 
@@ -760,22 +760,22 @@ export function CreateIngressView() {
     const rule = { ...ingressRule };
 
     const annotation: Annotation = {
-      Key: '',
-      Value: '',
-      ID: uuidv4(),
+      key: '',
+      value: '',
+      id: uuidv4(),
     };
     switch (type) {
       case 'rewrite':
-        annotation.Key = 'nginx.ingress.kubernetes.io/rewrite-target';
-        annotation.Value = '/$1';
+        annotation.key = 'nginx.ingress.kubernetes.io/rewrite-target';
+        annotation.value = '/$1';
         break;
       case 'regex':
-        annotation.Key = 'nginx.ingress.kubernetes.io/use-regex';
-        annotation.Value = 'true';
+        annotation.key = 'nginx.ingress.kubernetes.io/use-regex';
+        annotation.value = 'true';
         break;
       case 'ingressClass':
-        annotation.Key = 'kubernetes.io/ingress.class';
-        annotation.Value = '';
+        annotation.key = 'kubernetes.io/ingress.class';
+        annotation.value = '';
         break;
       default:
         break;

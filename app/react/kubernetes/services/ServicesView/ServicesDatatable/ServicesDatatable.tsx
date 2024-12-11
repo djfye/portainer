@@ -26,6 +26,7 @@ import { Service } from '../../types';
 
 import { columns } from './columns';
 import { createStore } from './datatable-store';
+import { ServiceRowData } from './types';
 
 const storageKey = 'k8sServicesDatatable';
 const settingsStore = createStore(storageKey);
@@ -104,7 +105,7 @@ export function ServicesDatatable() {
 function useServicesRowData(
   services: Service[],
   namespaces?: Namespaces
-): Service[] {
+): ServiceRowData[] {
   return useMemo(
     () =>
       services.map((service) => ({
@@ -119,9 +120,12 @@ function useServicesRowData(
 
 // needed to apply custom styling to the row cells and not globally.
 // required in the AC's for this ticket.
-function servicesRenderRow(row: Row<Service>, highlightedItemId?: string) {
+function servicesRenderRow(
+  row: Row<ServiceRowData>,
+  highlightedItemId?: string
+) {
   return (
-    <Table.Row<Service>
+    <Table.Row<ServiceRowData>
       cells={row.getVisibleCells()}
       className={clsx('[&>td]:!py-4 [&>td]:!align-top', {
         active: highlightedItemId === row.id,
@@ -136,7 +140,7 @@ interface SelectedService {
 }
 
 type TableActionsProps = {
-  selectedItems: Service[];
+  selectedItems: ServiceRowData[];
 };
 
 function TableActions({ selectedItems }: TableActionsProps) {

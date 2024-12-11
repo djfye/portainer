@@ -10,6 +10,7 @@ type Props = {
   resourceId?: string;
   /** if undefined, events are fetched for the cluster */
   namespace?: string;
+  noWidget?: boolean;
 };
 
 /** ResourceEventsDatatable returns the EventsDatatable for all events that relate to a specific resource id */
@@ -17,6 +18,7 @@ export function ResourceEventsDatatable({
   storageKey,
   resourceId,
   namespace,
+  noWidget = true,
 }: Props) {
   const tableState = useKubeStore(storageKey, {
     id: 'Date',
@@ -47,7 +49,7 @@ export function ResourceEventsDatatable({
       tableState={tableState}
       isLoading={resourceEventsQuery.isLoading}
       data-cy="k8sNodeDetail-eventsTable"
-      noWidget
+      noWidget={noWidget}
     />
   );
 }

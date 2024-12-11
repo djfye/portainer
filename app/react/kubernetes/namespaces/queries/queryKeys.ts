@@ -1,7 +1,12 @@
 import { compact } from 'lodash';
 
+import { EnvironmentId } from '@/react/portainer/environments/types';
+
 export const queryKeys = {
-  list: (environmentId: number, options?: { withResourceQuota?: boolean }) =>
+  list: (
+    environmentId: EnvironmentId,
+    options?: { withResourceQuota?: boolean }
+  ) =>
     compact([
       'environments',
       environmentId,
@@ -9,12 +14,21 @@ export const queryKeys = {
       'namespaces',
       options?.withResourceQuota,
     ]),
-  namespace: (environmentId: number, namespace: string) =>
+  namespace: (environmentId: EnvironmentId, namespace: string) =>
     [
       'environments',
       environmentId,
       'kubernetes',
       'namespaces',
       namespace,
+    ] as const,
+  namespaceYAML: (environmentId: EnvironmentId, namespace: string) =>
+    [
+      'environments',
+      environmentId,
+      'kubernetes',
+      'namespaces',
+      namespace,
+      'yaml',
     ] as const,
 };

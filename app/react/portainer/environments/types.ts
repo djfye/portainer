@@ -56,6 +56,8 @@ export interface KubernetesSnapshot {
 export type IngressClass = {
   Name: string;
   Type: string;
+  Blocked?: boolean;
+  BlockedNamespaces?: string[] | null;
 };
 
 export interface StorageClass {
@@ -82,6 +84,11 @@ export interface KubernetesConfiguration {
 export interface KubernetesSettings {
   Snapshots?: KubernetesSnapshot[] | null;
   Configuration: KubernetesConfiguration;
+  Flags: {
+    IsServerMetricsDetected: boolean;
+    IsServerIngressClassDetected: boolean;
+    IsServerStorageDetected: boolean;
+  };
 }
 
 export type EnvironmentEdge = {
@@ -153,11 +160,21 @@ export type Environment = {
   Snapshots: DockerSnapshot[];
   Kubernetes: KubernetesSettings;
   PublicURL?: string;
-  UserTrusted: boolean;
+  UserTrusted?: boolean;
   AMTDeviceGUID?: string;
   Edge: EnvironmentEdge;
   SecuritySettings: EnvironmentSecuritySettings;
   Gpus?: { name: string; value: string }[];
+  TLSConfig?: {
+    TLS: boolean;
+    TLSSkipVerify: boolean;
+  };
+  AzureCredentials?: {
+    ApplicationID: string;
+    TenantID: string;
+    AuthenticationKey: string;
+  };
+  ComposeSyntaxMaxVersion: string;
   EnableImageNotification: boolean;
   LocalTimeZone?: string;
 

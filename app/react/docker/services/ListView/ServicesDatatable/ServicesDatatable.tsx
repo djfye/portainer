@@ -28,34 +28,35 @@ import { TableActions } from './TableActions';
 import { type TableSettings as TableSettingsType } from './types';
 import { TableSettings } from './TableSettings';
 
-const tableKey = 'services';
-
-const store = createPersistedStore<TableSettingsType>(
-  tableKey,
-  'name',
-  (set) => ({
-    ...refreshableSettings(set),
-    ...hiddenColumnsSettings(set),
-    expanded: {},
-    setExpanded(value) {
-      set({ expanded: value });
-    },
-  })
-);
-
 export function ServicesDatatable({
   titleIcon = Shuffle,
   dataset,
   isAddActionVisible,
   isStackColumnVisible,
   onRefresh,
+  tableKey,
 }: {
   dataset: Array<ServiceViewModel> | undefined;
   titleIcon?: IconProps['icon'];
   isAddActionVisible?: boolean;
   isStackColumnVisible?: boolean;
   onRefresh?(): void;
+  tableKey: string;
 }) {
+  // use a unique tableKey so that unrelated services datatables don't share state
+  const store = createPersistedStore<TableSettingsType>(
+    tableKey,
+    'name',
+    (set) => ({
+      ...refreshableSettings(set),
+      ...hiddenColumnsSettings(set),
+      expanded: {},
+      setExpanded(value) {
+        set({ expanded: value });
+      },
+    })
+  );
+
   // useRef so that updating the parent filter doesn't cause a re-render
   const parentFilteredStatusRef = useRef<Map<string, boolean>>(new Map());
   const environmentId = useEnvironmentId();

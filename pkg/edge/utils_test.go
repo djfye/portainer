@@ -27,3 +27,34 @@ func TestGetPortainerURLFromEdgeKey(t *testing.T) {
 		})
 	}
 }
+
+func TestIsValidEdgeStackName(t *testing.T) {
+	f := func(name string, expected bool) {
+		if IsValidEdgeStackName(name) != expected {
+			t.Fatalf("expected %v, found %v", expected, IsValidEdgeStackName(name))
+		}
+	}
+
+	f("edge-stack", true)
+	f("edge_stack", true)
+	f("edgestack", true)
+	f("edgestack11", true)
+	f("111", true)
+	f("111edgestack", true)
+	f("edge#stack", false)
+	f("edge stack", false)
+	f("Edge_stack", false)
+	f("EdgeStack", false)
+	f("-edgestack", false)
+	f("_edgestack", false)
+	f("#edgestack", false)
+	f("/edgestack", false)
+	f("#edgestack", false)
+	f("édgestack", false)
+	f("", false)
+	f(" ", false)
+	f("-", false)
+	f("_", false)
+	f("E", false)
+	f("eedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackdgeedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackedgestackstack", false)
+}

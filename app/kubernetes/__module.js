@@ -478,10 +478,10 @@ angular.module('portainer.kubernetes', ['portainer.app', registriesModule, custo
 
     const resourcePool = {
       name: 'kubernetes.resourcePools.resourcePool',
-      url: '/:id',
+      url: '/:id?tab',
       views: {
         'content@': {
-          component: 'kubernetesResourcePoolView',
+          component: 'namespaceView',
         },
       },
       data: {

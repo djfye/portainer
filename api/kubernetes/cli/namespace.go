@@ -47,7 +47,9 @@ func (kcl *KubeClient) GetNamespaces() (map[string]portainer.K8sNamespaceInfo, e
 
 // fetchNamespacesForNonAdmin gets the namespaces in the current k8s environment(endpoint) for the non-admin user.
 func (kcl *KubeClient) fetchNamespacesForNonAdmin() (map[string]portainer.K8sNamespaceInfo, error) {
-	log.Debug().Msgf("Fetching namespaces for non-admin user: %v", kcl.NonAdminNamespaces)
+	log.Debug().
+		Str("context", "fetchNamespacesForNonAdmin").
+		Msg("Fetching namespaces for non-admin user")
 
 	if len(kcl.NonAdminNamespaces) == 0 {
 		return nil, nil
@@ -75,6 +77,11 @@ func (kcl *KubeClient) fetchNamespacesForNonAdmin() (map[string]portainer.K8sNam
 func (kcl *KubeClient) fetchNamespaces() (map[string]portainer.K8sNamespaceInfo, error) {
 	namespaces, err := kcl.cli.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
+		log.Error().
+			Str("context", "fetchNamespaces").
+			Err(err).
+			Msg("Failed to list namespaces")
+
 		return nil, fmt.Errorf("an error occurred during the fetchNamespacesForAdmin operation, unable to list namespaces for the admin user: %w", err)
 	}
 
@@ -92,6 +99,7 @@ func parseNamespace(namespace *corev1.Namespace) portainer.K8sNamespaceInfo {
 		Id:             string(namespace.UID),
 		Name:           namespace.Name,
 		Status:         namespace.Status,
+		Annotations:    namespace.Annotations,
 		CreationDate:   namespace.CreationTimestamp.Format(time.RFC3339),
 		NamespaceOwner: namespace.Labels[namespaceOwnerLabel],
 		IsSystem:       isSystemNamespace(namespace),
@@ -103,13 +111,18 @@ func parseNamespace(namespace *corev1.Namespace) portainer.K8sNamespaceInfo {
 func (kcl *KubeClient) GetNamespace(name string) (portainer.K8sNamespaceInfo, error) {
 	namespace, err := kcl.cli.CoreV1().Namespaces().Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
+		log.Error().
+			Str("context", "GetNamespace").
+			Str("namespace", name).
+			Err(err).
+			Msg("Failed to get namespace")
 		return portainer.K8sNamespaceInfo{}, err
 	}
 
 	return parseNamespace(namespace), nil
 }
 
-// CreateNamespace creates a new ingress in a given namespace in a k8s endpoint.
+// CreateNamespace creates a new namespace in a k8s endpoint.
 func (kcl *KubeClient) CreateNamespace(info models.K8sNamespaceDetails) (*corev1.Namespace, error) {
 	portainerLabels := map[string]string{
 		namespaceNameLabel:  stackutils.SanitizeLabel(info.Name),
@@ -125,50 +138,125 @@ func (kcl *KubeClient) CreateNamespace(info models.K8sNamespaceDetails) (*corev1
 	if err != nil {
 		log.Error().
 			Err(err).
+			Str("context", "CreateNamespace").
 			Str("Namespace", info.Name).
 			Msg("Failed to create the namespace")
 		return nil, err
 	}
 
-	if info.ResourceQuota != nil && info.ResourceQuota.Enabled {
-		log.Info().Msgf("Creating resource quota for namespace %s", info.Name)
-		log.Debug().Msgf("Creating resource quota with details: %+v", info.ResourceQuota)
-
-		resourceQuota := &corev1.ResourceQuota{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "portainer-rq-" + info.Name,
-				Namespace: info.Name,
-				Labels:    portainerLabels,
-			},
-			Spec: corev1.ResourceQuotaSpec{
-				Hard: corev1.ResourceList{},
-			},
-		}
-
-		if info.ResourceQuota.Enabled {
-			memory := resource.MustParse(info.ResourceQuota.Memory)
-			cpu := resource.MustParse(info.ResourceQuota.CPU)
-			if memory.Value() > 0 {
-				memQuota := memory
-				resourceQuota.Spec.Hard[corev1.ResourceLimitsMemory] = memQuota
-				resourceQuota.Spec.Hard[corev1.ResourceRequestsMemory] = memQuota
-			}
-
-			if cpu.Value() > 0 {
-				cpuQuota := cpu
-				resourceQuota.Spec.Hard[corev1.ResourceLimitsCPU] = cpuQuota
-				resourceQuota.Spec.Hard[corev1.ResourceRequestsCPU] = cpuQuota
-			}
-		}
-
-		_, err := kcl.cli.CoreV1().ResourceQuotas(info.Name).Create(context.Background(), resourceQuota, metav1.CreateOptions{})
-		if err != nil {
-			log.Error().Msgf("Failed to create resource quota for namespace %s: %s", info.Name, err)
-			return nil, err
-		}
+	if err := kcl.createOrUpdateNamespaceResourceQuota(info, portainerLabels); err != nil {
+		log.Error().
+			Err(err).
+			Str("context", "CreateNamespace").
+			Str("name", info.Name).
+			Msg("failed to create or update resource quota for namespace")
+		return nil, err
 	}
 
 	return namespace, nil
+}
+
+// UpdateIngress updates an ingress in a given namespace in a k8s endpoint.
+func (kcl *KubeClient) UpdateNamespace(info models.K8sNamespaceDetails) (*corev1.Namespace, error) {
+	portainerLabels := map[string]string{
+		namespaceNameLabel:  stackutils.SanitizeLabel(info.Name),
+		namespaceOwnerLabel: stackutils.SanitizeLabel(info.Owner),
+	}
+
+	namespace := corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        info.Name,
+			Annotations: info.Annotations,
+		},
+	}
+
+	updatedNamespace, err := kcl.cli.CoreV1().Namespaces().Update(context.Background(), &namespace, metav1.UpdateOptions{})
+	if err != nil {
+		log.Error().
+			Str("context", "UpdateNamespace").
+			Str("namespace", info.Name).
+			Err(err).
+			Msg("Failed to update namespace")
+		return nil, err
+	}
+
+	if err := kcl.createOrUpdateNamespaceResourceQuota(info, portainerLabels); err != nil {
+		log.Error().
+			Err(err).
+			Str("context", "UpdateNamespace").
+			Str("name", info.Name).
+			Msg("failed to create or update resource quota for namespace")
+		return nil, err
+	}
+
+	return updatedNamespace, nil
+}
+
+func (kcl *KubeClient) createOrUpdateNamespaceResourceQuota(info models.K8sNamespaceDetails, portainerLabels map[string]string) error {
+	if !info.ResourceQuota.Enabled {
+		if err := kcl.deleteNamespaceResourceQuota(info.Name); err != nil {
+			log.Debug().Err(err).Str("context", "createOrUpdateNamespaceResourceQuota").Str("name", info.Name).Msg("failed to delete resource quota for namespace")
+		}
+		return nil
+	}
+
+	resourceQuota := &corev1.ResourceQuota{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "portainer-rq-" + info.Name,
+			Namespace: info.Name,
+			Labels:    portainerLabels,
+		},
+		Spec: corev1.ResourceQuotaSpec{
+			Hard: corev1.ResourceList{},
+		},
+	}
+
+	if info.ResourceQuota.Enabled {
+		memory := resource.MustParse(info.ResourceQuota.Memory)
+		cpu := resource.MustParse(info.ResourceQuota.CPU)
+
+		if memory.Value() > 0 {
+			memQuota := memory
+			resourceQuota.Spec.Hard[corev1.ResourceLimitsMemory] = memQuota
+			resourceQuota.Spec.Hard[corev1.ResourceRequestsMemory] = memQuota
+		}
+
+		if cpu.Value() > 0 {
+			cpuQuota := cpu
+			resourceQuota.Spec.Hard[corev1.ResourceLimitsCPU] = cpuQuota
+			resourceQuota.Spec.Hard[corev1.ResourceRequestsCPU] = cpuQuota
+		}
+	}
+
+	_, err := kcl.cli.CoreV1().ResourceQuotas(info.Name).Update(context.Background(), resourceQuota, metav1.UpdateOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			log.Warn().
+				Str("context", "createOrUpdateNamespaceResourceQuota").
+				Str("name", info.Name).
+				Msg("resource quota not found, creating")
+			_, err = kcl.cli.CoreV1().ResourceQuotas(info.Name).Create(context.Background(), resourceQuota, metav1.CreateOptions{})
+		}
+	}
+
+	return err
+}
+
+func (kcl *KubeClient) deleteNamespaceResourceQuota(namespaceName string) error {
+	err := kcl.cli.CoreV1().ResourceQuotas(namespaceName).Delete(context.Background(), "portainer-rq-"+namespaceName, metav1.DeleteOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		log.Error().
+			Str("context", "deleteNamespaceResourceQuota").
+			Str("name", namespaceName).
+			Err(err).
+			Msg("failed to delete resource quota for namespace")
+		return err
+	}
+	log.Warn().
+		Str("context", "deleteNamespaceResourceQuota").
+		Str("name", namespaceName).
+		Msg("resource quota to delete not found")
+	return nil
 }
 
 func isSystemNamespace(namespace *corev1.Namespace) bool {
@@ -180,7 +268,6 @@ func isSystemNamespace(namespace *corev1.Namespace) bool {
 	systemNamespaces := defaultSystemNamespaces()
 
 	_, isSystem := systemNamespaces[namespace.Name]
-
 	return isSystem
 }
 
@@ -201,10 +288,13 @@ func (kcl *KubeClient) ToggleSystemState(namespaceName string, isSystem bool) er
 		return nil
 	}
 
-	nsService := kcl.cli.CoreV1().Namespaces()
-
-	namespace, err := nsService.Get(context.TODO(), namespaceName, metav1.GetOptions{})
+	namespace, err := kcl.cli.CoreV1().Namespaces().Get(context.TODO(), namespaceName, metav1.GetOptions{})
 	if err != nil {
+		log.Error().
+			Str("context", "ToggleSystemState").
+			Str("namespace", namespaceName).
+			Err(err).
+			Msg("failed to get namespace")
 		return errors.Wrap(err, "failed fetching namespace object")
 	}
 
@@ -218,8 +308,12 @@ func (kcl *KubeClient) ToggleSystemState(namespaceName string, isSystem bool) er
 
 	namespace.Labels[systemNamespaceLabel] = strconv.FormatBool(isSystem)
 
-	_, err = nsService.Update(context.TODO(), namespace, metav1.UpdateOptions{})
-	if err != nil {
+	if _, err := kcl.cli.CoreV1().Namespaces().Update(context.TODO(), namespace, metav1.UpdateOptions{}); err != nil {
+		log.Error().
+			Str("context", "ToggleSystemState").
+			Str("namespace", namespaceName).
+			Err(err).
+			Msg("failed updating namespace object")
 		return errors.Wrap(err, "failed updating namespace object")
 	}
 
@@ -228,29 +322,26 @@ func (kcl *KubeClient) ToggleSystemState(namespaceName string, isSystem bool) er
 	}
 
 	return nil
-
-}
-
-// UpdateIngress updates an ingress in a given namespace in a k8s endpoint.
-func (kcl *KubeClient) UpdateNamespace(info models.K8sNamespaceDetails) (*corev1.Namespace, error) {
-	namespace := corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        info.Name,
-			Annotations: info.Annotations,
-		},
-	}
-
-	return kcl.cli.CoreV1().Namespaces().Update(context.Background(), &namespace, metav1.UpdateOptions{})
 }
 
 func (kcl *KubeClient) DeleteNamespace(namespaceName string) (*corev1.Namespace, error) {
 	namespace, err := kcl.cli.CoreV1().Namespaces().Get(context.Background(), namespaceName, metav1.GetOptions{})
 	if err != nil {
+		log.Error().
+			Str("context", "DeleteNamespace").
+			Str("namespace", namespaceName).
+			Err(err).
+			Msg("failed fetching namespace object")
 		return nil, err
 	}
 
 	err = kcl.cli.CoreV1().Namespaces().Delete(context.Background(), namespaceName, metav1.DeleteOptions{})
 	if err != nil {
+		log.Error().
+			Str("context", "DeleteNamespace").
+			Str("namespace", namespaceName).
+			Err(err).
+			Msg("failed deleting namespace object")
 		return nil, err
 	}
 
@@ -261,6 +352,10 @@ func (kcl *KubeClient) DeleteNamespace(namespaceName string) (*corev1.Namespace,
 func (kcl *KubeClient) CombineNamespacesWithResourceQuotas(namespaces map[string]portainer.K8sNamespaceInfo, w http.ResponseWriter) *httperror.HandlerError {
 	resourceQuotas, err := kcl.GetResourceQuotas("")
 	if err != nil && !k8serrors.IsNotFound(err) {
+		log.Error().
+			Str("context", "CombineNamespacesWithResourceQuotas").
+			Err(err).
+			Msg("unable to retrieve resource quotas from the Kubernetes for an admin user")
 		return httperror.InternalServerError("an error occurred during the CombineNamespacesWithResourceQuotas operation, unable to retrieve resource quotas from the Kubernetes for an admin user. Error: ", err)
 	}
 
@@ -275,6 +370,11 @@ func (kcl *KubeClient) CombineNamespacesWithResourceQuotas(namespaces map[string
 func (kcl *KubeClient) CombineNamespaceWithResourceQuota(namespace portainer.K8sNamespaceInfo, w http.ResponseWriter) *httperror.HandlerError {
 	resourceQuota, err := kcl.GetPortainerResourceQuota(namespace.Name)
 	if err != nil && !k8serrors.IsNotFound(err) {
+		log.Error().
+			Str("context", "CombineNamespaceWithResourceQuota").
+			Str("namespace", namespace.Name).
+			Err(err).
+			Msg("unable to retrieve the resource quota associated with the namespace")
 		return httperror.InternalServerError(fmt.Sprintf("an error occurred during the CombineNamespaceWithResourceQuota operation, unable to retrieve the resource quota associated with the namespace: %s for a non-admin user. Error: ", namespace.Name), err)
 	}
 

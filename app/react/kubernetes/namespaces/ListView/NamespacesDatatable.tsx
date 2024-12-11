@@ -91,7 +91,7 @@ export function NamespacesDatatable() {
 
 function TableActions({
   selectedItems,
-  namespaces: namespacesQueryData,
+  namespaces,
 }: {
   selectedItems: PortainerNamespace[];
   namespaces?: PortainerNamespace[];
@@ -168,18 +168,21 @@ function TableActions({
 
           // Plain invalidation / refetching is confusing because namespaces hang in a terminating state
           // instead, optimistically update the cache manually to hide the deleting (terminating) namespaces
+          const remainingNamespaces = deletedNamespaces.reduce(
+            (acc, ns) => {
+              const index = acc.findIndex((n) => n.Name === ns);
+              if (index !== -1) {
+                acc.splice(index, 1);
+              }
+              return acc;
+            },
+            [...(namespaces ?? [])]
+          );
           queryClient.setQueryData(
             queryKeys.list(environmentId, {
               withResourceQuota: true,
             }),
-            () =>
-              deletedNamespaces.reduce(
-                (acc, ns) => {
-                  delete acc[ns as keyof typeof acc];
-                  return acc;
-                },
-                { ...namespacesQueryData }
-              )
+            () => remainingNamespaces
           );
         },
       }

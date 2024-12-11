@@ -70,6 +70,9 @@ export async function updateIngressControllerClassMap(
   ingressControllerClassMap: IngressControllerClassMap[],
   namespace?: string
 ) {
+  if (ingressControllerClassMap.length === 0) {
+    return [];
+  }
   try {
     const { data: controllerMaps } = await axios.put<
       IngressControllerClassMap[]

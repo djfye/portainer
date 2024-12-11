@@ -2,18 +2,17 @@ import { createColumnHelper } from '@tanstack/react-table';
 import _ from 'lodash';
 import { useMemo } from 'react';
 
-import { humanize, truncate } from '@/portainer/filters/filters';
 import { usePublicSettings } from '@/react/portainer/settings/queries';
+import { humanize } from '@/portainer/filters/filters';
 
 import { Link } from '@@/Link';
 import { ExternalBadge } from '@@/Badge/ExternalBadge';
 
 import { isExternalApplication } from '../../applications/utils';
 import { cpuHumanValue } from '../../applications/utils/cpuHumanValue';
+import { Application } from '../../applications/ListView/ApplicationsDatatable/types';
 
-import { NamespaceApp } from './types';
-
-const columnHelper = createColumnHelper<NamespaceApp>();
+const columnHelper = createColumnHelper<Application>();
 
 export function useColumns() {
   const hideStacksQuery = usePublicSettings<boolean>({
@@ -27,7 +26,7 @@ export function useColumns() {
         columnHelper.accessor('Name', {
           header: 'Name',
           cell: ({ row: { original: item } }) => (
-            <>
+            <div className="flex flex-0">
               <Link
                 to="kubernetes.applications.application"
                 params={{ name: item.Name, namespace: item.ResourcePool }}
@@ -40,7 +39,7 @@ export function useColumns() {
                   <ExternalBadge />
                 </div>
               )}
-            </>
+            </div>
           ),
         }),
         !hideStacksQuery.data &&
@@ -50,23 +49,34 @@ export function useColumns() {
           }),
         columnHelper.accessor('Image', {
           header: 'Image',
-          cell: ({ row: { original: item } }) => (
-            <>
-              {truncate(item.Image, 64)}
-              {item.Containers?.length > 1 && (
-                <>+ {item.Containers.length - 1}</>
-              )}
-            </>
+          cell: ({ getValue }) => (
+            <div className="max-w-md truncate">{getValue()}</div>
           ),
         }),
-        columnHelper.accessor('CPU', {
-          header: 'CPU',
-          cell: ({ getValue }) => cpuHumanValue(getValue()),
-        }),
-        columnHelper.accessor('Memory', {
-          header: 'Memory',
-          cell: ({ getValue }) => humanize(getValue()),
-        }),
+        columnHelper.accessor(
+          (row) =>
+            row.Resource?.CpuRequest
+              ? cpuHumanValue(row.Resource?.CpuRequest)
+              : '-',
+          {
+            header: 'CPU',
+            cell: ({ getValue }) => getValue(),
+          }
+        ),
+        columnHelper.accessor(
+          (row) =>
+            row.Resource?.MemoryRequest ? row.Resource?.MemoryRequest : '-',
+          {
+            header: 'Memory',
+            cell: ({ getValue }) => {
+              const value = getValue();
+              if (value === '-') {
+                return value;
+              }
+              return humanize(value);
+            },
+          }
+        ),
       ]),
     [hideStacksQuery.data]
   );

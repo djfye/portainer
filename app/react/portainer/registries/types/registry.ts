@@ -21,8 +21,8 @@ export enum RegistryTypes {
 }
 
 export interface RegistryAccess {
-  UserAccessPolicies: UserAccessPolicies;
-  TeamAccessPolicies: TeamAccessPolicies;
+  UserAccessPolicies: UserAccessPolicies | null;
+  TeamAccessPolicies: TeamAccessPolicies | null;
   Namespaces: string[];
 }
 
@@ -37,7 +37,7 @@ export interface Gitlab {
 }
 
 export interface Quay {
-  UseOrganisation: boolean;
+  UseOrganisation?: boolean;
   OrganisationName: string;
 }
 
@@ -71,7 +71,7 @@ export interface Registry {
   Authentication: boolean;
   Username: string;
   Password?: string;
-  RegistryAccesses: RegistryAccesses;
+  RegistryAccesses: RegistryAccesses | null;
   Gitlab: Gitlab;
   Quay: Quay;
   Github: Github;

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // GetPortainerURLFromEdgeKey returns the portainer URL from an edge key
@@ -27,4 +28,25 @@ func GetPortainerURLFromEdgeKey(edgeKey string) (string, error) {
 	}
 
 	return keyInfo[0], nil
+}
+
+// IsValidEdgeStackName validates an edge stack name
+// Edge stack name must be between 1 and 255 characters long
+// and can only contain lowercase letters, digits, hyphens and underscores
+// Edge stack name must start with either a lowercase letter or a digit
+func IsValidEdgeStackName(name string) bool {
+	if len(name) == 0 || len(name) > 255 {
+		return false
+	}
+
+	if !unicode.IsLower(rune(name[0])) && !unicode.IsDigit(rune(name[0])) {
+		return false
+	}
+
+	for _, r := range name {
+		if !(unicode.IsLower(r) || unicode.IsDigit(r) || r == '-' || r == '_') {
+			return false
+		}
+	}
+	return true
 }

@@ -73,7 +73,7 @@ interface Props {
   ) => void;
   handleAnnotationChange: (
     index: number,
-    key: 'Key' | 'Value',
+    key: 'key' | 'value',
     val: string
   ) => void;
   handlePathChange: (

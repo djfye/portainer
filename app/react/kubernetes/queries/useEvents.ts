@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { EnvironmentId } from '@/react/portainer/environments/types';
 import axios from '@/portainer/services/axios';
-import { withError } from '@/react-tools/react-query';
+import { withGlobalError } from '@/react-tools/react-query';
 
 import { parseKubernetesAxiosError } from '../axiosError';
 
@@ -71,12 +71,23 @@ export function useEvents(
     queryKeys.base(environmentId, { params, namespace }),
     () => getEvents(environmentId, { params, namespace }),
     {
-      ...withError('Unable to retrieve events'),
+      ...withGlobalError('Unable to retrieve events'),
       refetchInterval() {
         return queryOptions?.autoRefreshRate ?? false;
       },
     }
   );
+}
+
+export function useEventWarningsCount(
+  environmentId: EnvironmentId,
+  namespace?: string
+) {
+  const resourceEventsQuery = useEvents(environmentId, {
+    namespace,
+  });
+  const events = resourceEventsQuery.data || [];
+  return events.filter((e) => e.type === 'Warning').length;
 }
 
 function buildUrl(environmentId: EnvironmentId, namespace?: string) {

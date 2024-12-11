@@ -109,7 +109,10 @@ class KubernetesSecretConverter {
       res.Type = formValues.customType;
     }
     if (formValues.Type === KubernetesSecretTypeOptions.SERVICEACCOUNTTOKEN.value) {
-      res.Annotations = [{ name: 'kubernetes.io/service-account.name', value: formValues.ServiceAccountName }];
+      const serviceAccountAnnotation = formValues.Annotations.find((a) => a.key === 'kubernetes.io/service-account.name');
+      if (!serviceAccountAnnotation) {
+        res.Annotations.push({ key: 'kubernetes.io/service-account.name', value: formValues.ServiceAccountName });
+      }
     }
     return res;
   }

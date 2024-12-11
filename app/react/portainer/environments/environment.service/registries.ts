@@ -32,7 +32,7 @@ export async function updateEnvironmentRegistryAccess(
   try {
     await axios.put<void>(buildRegistryUrl(environmentId, registryId), access);
   } catch (e) {
-    throw parseAxiosError(e as Error);
+    throw parseAxiosError(e);
   }
 }
 
@@ -46,7 +46,7 @@ export async function getEnvironmentRegistries(
     });
     return data;
   } catch (e) {
-    throw parseAxiosError(e as Error);
+    throw parseAxiosError(e);
   }
 }
 
@@ -60,7 +60,7 @@ export async function getEnvironmentRegistry(
     );
     return data;
   } catch (e) {
-    throw parseAxiosError(e as Error);
+    throw parseAxiosError(e);
   }
 }
 

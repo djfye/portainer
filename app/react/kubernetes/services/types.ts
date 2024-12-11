@@ -26,18 +26,17 @@ export type ServiceType =
 export type Service = {
   Name: string;
   UID: string;
+  Type: ServiceType;
   Namespace: string;
   Annotations?: Record<string, string>;
+  CreationDate: string;
   Labels?: Record<string, string>;
-  Type: ServiceType;
+  AllocateLoadBalancerNodePorts?: boolean;
   Ports?: Array<ServicePort>;
   Selector?: Record<string, string>;
-  ClusterIPs?: Array<string>;
   IngressStatus?: Array<IngressStatus>;
+  Applications?: Application[];
+  ClusterIPs?: Array<string>;
   ExternalName?: string;
   ExternalIPs?: Array<string>;
-  CreationDate: string;
-  Applications?: Application[];
-
-  IsSystem: boolean;
 };

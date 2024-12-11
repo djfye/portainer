@@ -4,7 +4,7 @@ import { filterHOC } from '@/react/components/datatables/Filter';
 
 import { Link } from '@@/Link';
 
-import { Service } from '../../../types';
+import { ServiceRowData } from '../types';
 
 import { columnHelper } from './helper';
 
@@ -31,6 +31,9 @@ export const namespace = columnHelper.accessor('Namespace', {
     filter: filterHOC('Filter by namespace'),
   },
   enableColumnFilter: true,
-  filterFn: (row: Row<Service>, columnId: string, filterValue: string[]) =>
-    filterValue.length === 0 || filterValue.includes(row.original.Namespace),
+  filterFn: (
+    row: Row<ServiceRowData>,
+    columnId: string,
+    filterValue: string[]
+  ) => filterValue.length === 0 || filterValue.includes(row.original.Namespace),
 });

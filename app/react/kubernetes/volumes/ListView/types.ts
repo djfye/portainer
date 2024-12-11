@@ -10,7 +10,7 @@ export interface VolumeViewModel {
     storageClass: {
       Name: string;
     };
-    Storage?: unknown;
+    Storage?: string | number;
     CreationDate?: string;
     ApplicationOwner?: string;
     IsExternal?: boolean;

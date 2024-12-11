@@ -27,7 +27,7 @@ import (
 // @failure 500 "Server error occurred while attempting to retrieve kubernetes volumes."
 // @router /kubernetes/{id}/volumes [get]
 func (handler *Handler) GetAllKubernetesVolumes(w http.ResponseWriter, r *http.Request) *httperror.HandlerError {
-	volumes, err := handler.getKubernetesVolumes(r)
+	volumes, err := handler.getKubernetesVolumes(r, "")
 	if err != nil {
 		return err
 	}
@@ -49,12 +49,42 @@ func (handler *Handler) GetAllKubernetesVolumes(w http.ResponseWriter, r *http.R
 // @failure 500 "Server error occurred while attempting to retrieve kubernetes volumes count."
 // @router /kubernetes/{id}/volumes/count [get]
 func (handler *Handler) getAllKubernetesVolumesCount(w http.ResponseWriter, r *http.Request) *httperror.HandlerError {
-	volumes, err := handler.getKubernetesVolumes(r)
+	volumes, err := handler.getKubernetesVolumes(r, "")
 	if err != nil {
 		return err
 	}
 
 	return response.JSON(w, len(volumes))
+}
+
+// @id GetKubernetesVolumesInNamespace
+// @summary Get Kubernetes volumes within a namespace in the given Portainer environment
+// @description Get a list of kubernetes volumes within the specified namespace in the given environment (Endpoint). The Endpoint ID must be a valid Portainer environment identifier.
+// @description **Access policy**: Authenticated user.
+// @tags kubernetes
+// @security ApiKeyAuth || jwt
+// @produce json
+// @param id path int true "Environment identifier"
+// @param namespace path string true "Namespace identifier"
+// @param withApplications query boolean false "When set to True, include the applications that are using the volumes. It is set to false by default"
+// @success 200 {object} map[string]kubernetes.K8sVolumeInfo "Success"
+// @failure 400 "Invalid request payload, such as missing required fields or fields not meeting validation criteria."
+// @failure 403 "Unauthorized access or operation not allowed."
+// @failure 500 "Server error occurred while attempting to retrieve kubernetes volumes in the namespace."
+// @router /kubernetes/{id}/namespaces/{namespace}/volumes [get]
+func (handler *Handler) GetKubernetesVolumesInNamespace(w http.ResponseWriter, r *http.Request) *httperror.HandlerError {
+	namespace, err := request.RetrieveRouteVariableValue(r, "namespace")
+	if err != nil {
+		log.Error().Err(err).Str("context", "GetKubernetesVolumesInNamespace").Msg("Unable to retrieve namespace identifier")
+		return httperror.BadRequest("Invalid namespace identifier", err)
+	}
+
+	volumes, httpErr := handler.getKubernetesVolumes(r, namespace)
+	if httpErr != nil {
+		return httpErr
+	}
+
+	return response.JSON(w, volumes)
 }
 
 // @id GetKubernetesVolume
@@ -109,7 +139,7 @@ func (handler *Handler) getKubernetesVolume(w http.ResponseWriter, r *http.Reque
 	return response.JSON(w, volume)
 }
 
-func (handler *Handler) getKubernetesVolumes(r *http.Request) ([]models.K8sVolumeInfo, *httperror.HandlerError) {
+func (handler *Handler) getKubernetesVolumes(r *http.Request, namespace string) ([]models.K8sVolumeInfo, *httperror.HandlerError) {
 	withApplications, err := request.RetrieveBooleanQueryParameter(r, "withApplications", true)
 	if err != nil {
 		log.Error().Err(err).Str("context", "GetKubernetesVolumes").Bool("withApplications", withApplications).Msg("Unable to parse query parameter")
@@ -122,7 +152,7 @@ func (handler *Handler) getKubernetesVolumes(r *http.Request) ([]models.K8sVolum
 		return nil, httperror.InternalServerError("Failed to prepare Kubernetes client", httpErr)
 	}
 
-	volumes, err := cli.GetVolumes("")
+	volumes, err := cli.GetVolumes(namespace)
 	if err != nil {
 		if k8serrors.IsUnauthorized(err) {
 			log.Error().Err(err).Str("context", "GetKubernetesVolumes").Msg("Unauthorized access")

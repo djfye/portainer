@@ -241,7 +241,13 @@
   environment="endpoint"
 ></stack-containers-datatable>
 
-<docker-services-datatable ng-if="services && (!orphaned || orphanedRunning)" dataset="services" title-icon="list" on-refresh="(getServices)"></docker-services-datatable>
+<docker-services-datatable
+  ng-if="services && (!orphaned || orphanedRunning)"
+  dataset="services"
+  title-icon="list"
+  on-refresh="(getServices)"
+  table-key="'stack-services'"
+></docker-services-datatable>
 
 <!-- access-control-panel -->
 <access-control-panel

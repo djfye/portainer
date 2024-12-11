@@ -4,7 +4,6 @@ import { r2a } from '@/react-tools/react2angular';
 import { IngressClassDatatableAngular } from '@/react/kubernetes/cluster/ingressClass/IngressClassDatatable/IngressClassDatatableAngular';
 import { NamespacesSelector } from '@/react/kubernetes/cluster/RegistryAccessView/NamespacesSelector';
 import { NamespaceAccessUsersSelector } from '@/react/kubernetes/namespaces/AccessView/NamespaceAccessUsersSelector';
-import { RegistriesSelector } from '@/react/kubernetes/namespaces/components/RegistriesFormSection/RegistriesSelector';
 import { KubeServicesForm } from '@/react/kubernetes/applications/CreateView/application-services/KubeServicesForm';
 import { kubeServicesValidation } from '@/react/kubernetes/applications/CreateView/application-services/kubeServicesValidation';
 import { withReactQuery } from '@/react-tools/withReactQuery';
@@ -104,15 +103,6 @@ export const ngModule = angular
       'dataCy',
       'placeholder',
       'name',
-    ])
-  )
-  .component(
-    'createNamespaceRegistriesSelector',
-    r2a(withUIRouter(withReactQuery(withCurrentUser(RegistriesSelector))), [
-      'inputId',
-      'onChange',
-      'options',
-      'value',
     ])
   )
   .component(

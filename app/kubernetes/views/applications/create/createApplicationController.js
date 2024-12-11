@@ -3,7 +3,7 @@ import _ from 'lodash-es';
 import filesizeParser from 'filesize-parser';
 import * as JsonPatch from 'fast-json-patch';
 import { RegistryTypes } from '@/portainer/models/registryTypes';
-import { getServices } from '@/react/kubernetes/networks/services/service';
+import { getServices } from '@/react/kubernetes/services/useNamespaceServices';
 import { KubernetesConfigurationKinds } from 'Kubernetes/models/configuration/models';
 import { getGlobalDeploymentOptions } from '@/react/portainer/settings/settings.service';
 
@@ -25,11 +25,11 @@ import KubernetesNamespaceHelper from 'Kubernetes/helpers/namespaceHelper';
 import { KubernetesNodeHelper } from 'Kubernetes/node/helper';
 import { updateIngress, getIngresses } from '@/react/kubernetes/ingresses/service';
 import { confirmUpdateAppIngress } from '@/react/kubernetes/applications/CreateView/UpdateIngressPrompt';
+import { KUBE_STACK_NAME_VALIDATION_REGEX } from '@/react/kubernetes/DeployView/StackName/constants';
+import { isVolumeUsed } from '@/react/kubernetes/volumes/utils';
 import { confirm, confirmUpdate, confirmWebEditorDiscard } from '@@/modals/confirm';
 import { buildConfirmButton } from '@@/modals/utils';
 import { ModalType } from '@@/modals';
-import { KUBE_STACK_NAME_VALIDATION_REGEX } from '@/react/kubernetes/DeployView/StackName/constants';
-import { isVolumeUsed } from '@/react/kubernetes/volumes/utils';
 
 class KubernetesCreateApplicationController {
   /* #region  CONSTRUCTOR */

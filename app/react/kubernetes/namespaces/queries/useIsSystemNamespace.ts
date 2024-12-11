@@ -4,10 +4,11 @@ import { PortainerNamespace } from '../types';
 
 import { useNamespaceQuery } from './useNamespaceQuery';
 
-export function useIsSystemNamespace(namespace: string) {
+export function useIsSystemNamespace(namespace: string, enabled = true) {
   const envId = useEnvironmentId();
   const query = useNamespaceQuery(envId, namespace, {
     select: (namespace) => namespace.IsSystem,
+    enabled,
   });
 
   return !!query.data;

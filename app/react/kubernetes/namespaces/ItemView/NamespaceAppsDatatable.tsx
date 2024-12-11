@@ -1,7 +1,8 @@
 import { Code } from 'lucide-react';
 
+import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
+
 import { Datatable, TableSettingsMenu } from '@@/datatables';
-import { useRepeater } from '@@/datatables/useRepeater';
 import { TableSettingsMenuAutoRefresh } from '@@/datatables/TableSettingsMenuAutoRefresh';
 import { useTableStateWithStorage } from '@@/datatables/useTableState';
 import {
@@ -10,20 +11,14 @@ import {
   RefreshableTableSettings,
 } from '@@/datatables/types';
 
-import { NamespaceApp } from './types';
+import { useApplications } from '../../applications/queries/useApplications';
+
 import { useColumns } from './columns';
 
 interface TableSettings extends BasicTableSettings, RefreshableTableSettings {}
 
-export function NamespaceAppsDatatable({
-  dataset,
-  onRefresh,
-  isLoading,
-}: {
-  dataset: Array<NamespaceApp>;
-  onRefresh: () => void;
-  isLoading: boolean;
-}) {
+export function NamespaceAppsDatatable({ namespace }: { namespace: string }) {
+  const environmentId = useEnvironmentId();
   const tableState = useTableStateWithStorage<TableSettings>(
     'kube-namespace-apps',
     'Name',
@@ -31,18 +26,25 @@ export function NamespaceAppsDatatable({
       ...refreshableSettings(set),
     })
   );
-  useRepeater(tableState.autoRefreshRate, onRefresh);
+
+  const applicationsQuery = useApplications(environmentId, {
+    refetchInterval: tableState.autoRefreshRate * 1000,
+    namespace,
+    withDependencies: true,
+  });
+  const applications = applicationsQuery.data ?? [];
+
   const columns = useColumns();
 
   return (
     <Datatable
-      dataset={dataset}
+      dataset={applications}
       settingsManager={tableState}
       columns={columns}
       disableSelect
       title="Applications running in this namespace"
       titleIcon={Code}
-      isLoading={isLoading}
+      isLoading={applicationsQuery.isLoading}
       renderTableSettings={() => (
         <TableSettingsMenu>
           <TableSettingsMenuAutoRefresh

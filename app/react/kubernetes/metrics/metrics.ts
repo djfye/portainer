@@ -32,20 +32,6 @@ export async function getMetricsForNode(
   }
 }
 
-export async function getMetricsForAllPods(
-  environmentId: EnvironmentId,
-  namespace: string
-) {
-  try {
-    const { data: pods } = await axios.get(
-      `kubernetes/${environmentId}/metrics/pods/namespace/${namespace}`
-    );
-    return pods;
-  } catch (e) {
-    throw parseAxiosError(e, 'Unable to retrieve metrics for all pods');
-  }
-}
-
 export async function getMetricsForPod(
   environmentId: EnvironmentId,
   namespace: string,

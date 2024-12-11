@@ -49,7 +49,7 @@ export function useAllStoragesQuery(
   );
 }
 
-// get all volumes from a namespace
+// get all volumes in a cluster
 export async function getAllVolumes(
   environmentId: EnvironmentId,
   params?: { withApplications: boolean }
@@ -65,7 +65,7 @@ export async function getAllVolumes(
   }
 }
 
-function convertToVolumeViewModels(
+export function convertToVolumeViewModels(
   volumes: K8sVolumeInfo[]
 ): VolumeViewModel[] {
   return volumes.map((volume) => {

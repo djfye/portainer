@@ -58,6 +58,15 @@ type (
 		// Used only for EE async edge agent
 		// ReadyRePullImage is a flag to indicate whether the auto update is trigger to re-pull image
 		ReadyRePullImage bool
+
+		DeployerOptionsPayload DeployerOptionsPayload
+	}
+
+	DeployerOptionsPayload struct {
+		// Prune is a flag indicating if the agent must prune the containers or not when creating/updating an edge stack
+		// This flag drives docker compose `--remove-orphans` and docker stack `--prune` options
+		// Used only for EE
+		Prune bool
 	}
 
 	// RegistryCredentials holds the credentials for a Docker registry.

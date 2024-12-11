@@ -40,23 +40,28 @@ function Cell({
           },
         ])}
       />
-      {item.DeploymentType ===
-        KubernetesApplicationDeploymentTypes.Replicated && (
-        <span>Replicated</span>
-      )}
-      {item.DeploymentType === KubernetesApplicationDeploymentTypes.Global && (
-        <span>Global</span>
-      )}
-      {item.RunningPodsCount >= 0 && item.TotalPodsCount >= 0 && (
-        <span>
-          <code aria-label="Running Pods" title="Running Pods">
-            {item.RunningPodsCount}
-          </code>{' '}
-          /{' '}
-          <code aria-label="Total Pods" title="Total Pods">
-            {item.TotalPodsCount}
-          </code>
-        </span>
+      {item.ApplicationType !== KubernetesApplicationTypes.Helm && (
+        <>
+          {item.DeploymentType ===
+            KubernetesApplicationDeploymentTypes.Replicated && (
+            <span className="mr-1">Replicated</span>
+          )}
+          {item.DeploymentType ===
+            KubernetesApplicationDeploymentTypes.Global && (
+            <span className="mr-1">Global</span>
+          )}
+          {item.RunningPodsCount >= 0 && item.TotalPodsCount >= 0 && (
+            <span>
+              <code aria-label="Running Pods" title="Running Pods">
+                {item.RunningPodsCount}
+              </code>{' '}
+              /{' '}
+              <code aria-label="Total Pods" title="Total Pods">
+                {item.TotalPodsCount}
+              </code>
+            </span>
+          )}
+        </>
       )}
       {item.KubernetesApplications && <span>{item.Status}</span>}
     </>
