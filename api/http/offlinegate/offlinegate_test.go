@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_canLockAndUnlock(t *testing.T) {
@@ -145,4 +146,31 @@ func Test_waitingMiddleware_mayTimeout_whenLockedForTooLong(t *testing.T) {
 	})).ServeHTTP(response, request)
 
 	assert.Equal(t, http.StatusRequestTimeout, response.Result().StatusCode, "Request support to timeout waiting for the gate")
+}
+
+func Test_waitingMiddleware_handlerPanics(t *testing.T) {
+	o := NewOfflineGate()
+
+	request := httptest.NewRequest(http.MethodPost, "/", nil)
+	response := httptest.NewRecorder()
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		defer func() {
+			recover()
+
+			wg.Done()
+		}()
+
+		o.WaitingMiddleware(time.Second, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			panic("panic")
+		})).ServeHTTP(response, request)
+	}()
+
+	wg.Wait()
+
+	require.True(t, o.lock.TryLock())
+	o.lock.Unlock()
 }

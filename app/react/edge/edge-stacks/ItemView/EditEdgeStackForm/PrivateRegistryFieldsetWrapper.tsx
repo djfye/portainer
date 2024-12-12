@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import { useEffect } from 'react';
 
 import { notifyError } from '@/portainer/services/notifications';
 import { PrivateRegistryFieldset } from '@/react/edge/edge-stacks/components/PrivateRegistryFieldset';
@@ -31,11 +30,6 @@ export function PrivateRegistryFieldsetWrapper({
   const dryRunMutation = useParseRegistries();
 
   const registriesQuery = useRegistries({ hideDefault: true });
-
-  useEffect(() => {
-    matchRegistry(values);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.file, values.fileContent]);
 
   if (!registriesQuery.data) {
     return null;

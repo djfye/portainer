@@ -45,7 +45,9 @@ func (o *OfflineGate) WaitingMiddleware(timeout time.Duration, next http.Handler
 			httperror.WriteError(w, http.StatusRequestTimeout, "Request timed out while waiting for the backup process to finish", http.ErrHandlerTimeout)
 			return
 		}
+
+		defer o.lock.RUnlock()
+
 		next.ServeHTTP(w, r)
-		o.lock.RUnlock()
 	})
 }

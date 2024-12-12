@@ -1,6 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
 
-import { withGlobalError } from '@/react-tools/react-query';
 import { RegistryId } from '@/react/portainer/registries/types/registry';
 import axios, {
   json2formData,
@@ -10,9 +9,10 @@ import axios, {
 import { buildUrl } from './buildUrl';
 
 export function useParseRegistries() {
-  return useMutation(parseRegistries, {
-    ...withGlobalError('Failed parsing registries'),
-  });
+  return useMutation(
+    parseRegistries
+    // handle errors in the calling function (notifyError vs setting form errors in validation)
+  );
 }
 
 export async function parseRegistries({
