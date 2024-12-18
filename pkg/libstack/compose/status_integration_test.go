@@ -106,8 +106,7 @@ func waitForStatus(deployer libstack.Deployer, ctx context.Context, stackName st
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 	defer cancel()
 
-	statusCh := deployer.WaitForStatus(ctx, stackName, requiredStatus)
-	result := <-statusCh
+	result := deployer.WaitForStatus(ctx, stackName, requiredStatus)
 	if result.ErrorMsg == "" {
 		return result.Status, "", nil
 	}

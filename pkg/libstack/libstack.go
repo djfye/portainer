@@ -18,7 +18,7 @@ type Deployer interface {
 	Pull(ctx context.Context, filePaths []string, options Options) error
 	Run(ctx context.Context, filePaths []string, serviceName string, options RunOptions) error
 	Validate(ctx context.Context, filePaths []string, options Options) error
-	WaitForStatus(ctx context.Context, name string, status Status) <-chan WaitResult
+	WaitForStatus(ctx context.Context, name string, status Status) WaitResult
 	Config(ctx context.Context, filePaths []string, options Options) ([]byte, error)
 	GetExistingEdgeStacks(ctx context.Context) ([]EdgeStack, error)
 }

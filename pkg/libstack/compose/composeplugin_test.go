@@ -59,7 +59,7 @@ services:
 
 	require.True(t, containerExists(composeContainerName))
 
-	waitResult := <-w.WaitForStatus(ctx, projectName, libstack.StatusCompleted)
+	waitResult := w.WaitForStatus(ctx, projectName, libstack.StatusCompleted)
 
 	require.Empty(t, waitResult.ErrorMsg)
 	require.Equal(t, libstack.StatusCompleted, waitResult.Status)
