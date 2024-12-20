@@ -16,6 +16,10 @@ function SettingsAuthenticationController($q, $scope, $state, Notifications, Set
     actionInProgress: false,
     availableUserSessionTimeoutOptions: [
       {
+        key: '30 minutes',
+        value: '30m',
+      },
+      {
         key: '1 hour',
         value: '1h',
       },
