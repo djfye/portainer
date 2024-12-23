@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/dataservices"
@@ -37,6 +38,8 @@ type (
 		dockerClientFactory  *dockerclient.ClientFactory
 		gitService           portainer.GitService
 		snapshotService      portainer.SnapshotService
+		dockerID             string
+		mu                   sync.Mutex
 	}
 
 	// TransportParameters is used to create a new Transport
@@ -679,9 +682,7 @@ func (transport *Transport) executeGenericResourceDeletionOperation(request *htt
 	}
 
 	if resourceControl != nil {
-		if err := transport.dataStore.ResourceControl().Delete(resourceControl.ID); err != nil {
-			return response, err
-		}
+		err = transport.dataStore.ResourceControl().Delete(resourceControl.ID)
 	}
 
 	return response, err

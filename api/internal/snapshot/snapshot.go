@@ -16,7 +16,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Service repesents a service to manage environment(endpoint) snapshots.
+// Service represents a service to manage environment(endpoint) snapshots.
 // It provides an interface to start background snapshots as well as
 // specific Docker/Kubernetes environment(endpoint) snapshot methods.
 type Service struct {
@@ -174,30 +174,6 @@ func (service *Service) FillSnapshotData(endpoint *portainer.Endpoint) error {
 	return FillSnapshotData(service.dataStore, endpoint)
 }
 
-func FillSnapshotData(tx dataservices.DataStoreTx, endpoint *portainer.Endpoint) error {
-	snapshot, err := tx.Snapshot().Read(endpoint.ID)
-	if tx.IsErrObjectNotFound(err) {
-		endpoint.Snapshots = []portainer.DockerSnapshot{}
-		endpoint.Kubernetes.Snapshots = []portainer.KubernetesSnapshot{}
-
-		return nil
-	}
-
-	if err != nil {
-		return err
-	}
-
-	if snapshot.Docker != nil {
-		endpoint.Snapshots = []portainer.DockerSnapshot{*snapshot.Docker}
-	}
-
-	if snapshot.Kubernetes != nil {
-		endpoint.Kubernetes.Snapshots = []portainer.KubernetesSnapshot{*snapshot.Kubernetes}
-	}
-
-	return nil
-}
-
 func (service *Service) snapshotKubernetesEndpoint(endpoint *portainer.Endpoint) error {
 	kubernetesSnapshot, err := service.kubernetesSnapshotter.CreateSnapshot(endpoint)
 	if err != nil {
@@ -285,11 +261,16 @@ func (service *Service) snapshotEndpoints() error {
 
 		snapshotError := service.SnapshotEndpoint(&endpoint)
 
-		service.dataStore.UpdateTx(func(tx dataservices.DataStoreTx) error {
+		if err := service.dataStore.UpdateTx(func(tx dataservices.DataStoreTx) error {
 			updateEndpointStatus(tx, &endpoint, snapshotError, service.pendingActionsService)
 
 			return nil
-		})
+		}); err != nil {
+			log.Error().
+				Err(err).
+				Int("endpoint_id", int(endpoint.ID)).
+				Msg("unable to update environment status")
+		}
 	}
 
 	return nil
@@ -340,12 +321,31 @@ func FetchDockerID(snapshot portainer.DockerSnapshot) (string, error) {
 		return info.ID, nil
 	}
 
-	swarmInfo := info.Swarm
-	if swarmInfo.Cluster == nil {
+	if info.Swarm.Cluster == nil {
 		return "", errors.New("swarm environment is missing cluster info snapshot")
 	}
 
-	clusterInfo := swarmInfo.Cluster
+	return info.Swarm.Cluster.ID, nil
+}
 
-	return clusterInfo.ID, nil
+func FillSnapshotData(tx dataservices.DataStoreTx, endpoint *portainer.Endpoint) error {
+	snapshot, err := tx.Snapshot().Read(endpoint.ID)
+	if tx.IsErrObjectNotFound(err) {
+		endpoint.Snapshots = []portainer.DockerSnapshot{}
+		endpoint.Kubernetes.Snapshots = []portainer.KubernetesSnapshot{}
+
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	if snapshot.Docker != nil {
+		endpoint.Snapshots = []portainer.DockerSnapshot{*snapshot.Docker}
+	}
+
+	if snapshot.Kubernetes != nil {
+		endpoint.Kubernetes.Snapshots = []portainer.KubernetesSnapshot{*snapshot.Kubernetes}
+	}
+
+	return nil
 }
