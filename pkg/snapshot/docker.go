@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/segmentio/encoding/json"
+	portainer "github.com/portainer/portainer/api"
+	"github.com/portainer/portainer/api/docker/consts"
+	edgeutils "github.com/portainer/portainer/pkg/edge"
+	networkingutils "github.com/portainer/portainer/pkg/networking"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -17,11 +20,8 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
-	portainer "github.com/portainer/portainer/api"
-	"github.com/portainer/portainer/api/docker/consts"
-	edgeutils "github.com/portainer/portainer/pkg/edge"
-	networkingutils "github.com/portainer/portainer/pkg/networking"
 	"github.com/rs/zerolog/log"
+	"github.com/segmentio/encoding/json"
 )
 
 func CreateDockerSnapshot(cli *client.Client) (*portainer.DockerSnapshot, error) {
@@ -29,49 +29,39 @@ func CreateDockerSnapshot(cli *client.Client) (*portainer.DockerSnapshot, error)
 		return nil, err
 	}
 
-	dockerSnapshot := &portainer.DockerSnapshot{
-		StackCount: 0,
-	}
+	dockerSnapshot := &portainer.DockerSnapshot{}
 
-	err := dockerSnapshotInfo(dockerSnapshot, cli)
-	if err != nil {
+	if err := dockerSnapshotInfo(dockerSnapshot, cli); err != nil {
 		log.Warn().Err(err).Msg("unable to snapshot engine information")
 	}
 
 	if dockerSnapshot.Swarm {
-		err = dockerSnapshotSwarmServices(dockerSnapshot, cli)
-		if err != nil {
+		if err := dockerSnapshotSwarmServices(dockerSnapshot, cli); err != nil {
 			log.Warn().Err(err).Msg("unable to snapshot Swarm services")
 		}
 
-		err = dockerSnapshotNodes(dockerSnapshot, cli)
-		if err != nil {
+		if err := dockerSnapshotNodes(dockerSnapshot, cli); err != nil {
 			log.Warn().Err(err).Msg("unable to snapshot Swarm nodes")
 		}
 	}
 
-	err = dockerSnapshotContainers(dockerSnapshot, cli)
-	if err != nil {
+	if err := dockerSnapshotContainers(dockerSnapshot, cli); err != nil {
 		log.Warn().Err(err).Msg("unable to snapshot containers")
 	}
 
-	err = dockerSnapshotImages(dockerSnapshot, cli)
-	if err != nil {
+	if err := dockerSnapshotImages(dockerSnapshot, cli); err != nil {
 		log.Warn().Err(err).Msg("unable to snapshot images")
 	}
 
-	err = dockerSnapshotVolumes(dockerSnapshot, cli)
-	if err != nil {
+	if err := dockerSnapshotVolumes(dockerSnapshot, cli); err != nil {
 		log.Warn().Err(err).Msg("unable to snapshot volumes")
 	}
 
-	err = dockerSnapshotNetworks(dockerSnapshot, cli)
-	if err != nil {
+	if err := dockerSnapshotNetworks(dockerSnapshot, cli); err != nil {
 		log.Warn().Err(err).Msg("unable to snapshot networks")
 	}
 
-	err = dockerSnapshotVersion(dockerSnapshot, cli)
-	if err != nil {
+	if err := dockerSnapshotVersion(dockerSnapshot, cli); err != nil {
 		log.Warn().Err(err).Msg("unable to snapshot engine version")
 	}
 
@@ -101,8 +91,7 @@ func dockerSnapshotNodes(snapshot *portainer.DockerSnapshot, cli *client.Client)
 		return err
 	}
 
-	var nanoCpus int64
-	var totalMem int64
+	var nanoCpus, totalMem int64
 
 	for _, node := range nodes {
 		nanoCpus += node.Description.Resources.NanoCPUs
@@ -149,47 +138,53 @@ func dockerSnapshotContainers(snapshot *portainer.DockerSnapshot, cli *client.Cl
 	gpuUseAll := false
 
 	for _, container := range containers {
-		if container.State == "running" {
-			// Snapshot GPUs
-			response, err := cli.ContainerInspect(context.Background(), container.ID)
-			if err != nil {
-				// Inspect a container will fail when the container runs on a different
-				// Swarm node, so it is better to log the error instead of return error
-				// when the Swarm mode is enabled
-				if !snapshot.Swarm {
-					return err
-				} else {
-					if !strings.Contains(err.Error(), "No such container") {
-						return err
-					}
-					// It is common to have containers running on different Swarm nodes,
-					// so we just log the error in the debug level
-					log.Debug().Str("container", container.ID).Err(err).Msg("unable to inspect container in other Swarm nodes")
-				}
-			} else {
-				var gpuOptions *_container.DeviceRequest = nil
-				for _, deviceRequest := range response.HostConfig.Resources.DeviceRequests {
-					if deviceRequest.Driver == "nvidia" || deviceRequest.Capabilities[0][0] == "gpu" {
-						gpuOptions = &deviceRequest
-					}
-				}
-
-				if gpuOptions != nil {
-					if gpuOptions.Count == -1 {
-						gpuUseAll = true
-					}
-
-					for _, id := range gpuOptions.DeviceIDs {
-						gpuUseSet[id] = struct{}{}
-					}
-				}
-			}
-		}
-
 		for k, v := range container.Labels {
 			if k == consts.ComposeStackNameLabel {
 				stacks[v] = struct{}{}
 			}
+		}
+
+		if container.State != "running" {
+			continue
+		}
+
+		// Snapshot GPUs
+		response, err := cli.ContainerInspect(context.Background(), container.ID)
+		if err != nil && !snapshot.Swarm {
+			return err
+		} else if err != nil {
+			// Inspect a container will fail when the container runs on a different
+			// Swarm node, so it is better to log the error instead of return error
+			// when the Swarm mode is enabled
+			if !strings.Contains(err.Error(), "No such container") {
+				return err
+			}
+
+			// It is common to have containers running on different Swarm nodes,
+			// so we just log the error in the debug level
+			log.Debug().Str("container", container.ID).Err(err).Msg("unable to inspect container in other Swarm nodes")
+
+			continue
+		}
+
+		var gpuOptions *_container.DeviceRequest
+
+		for _, deviceRequest := range response.HostConfig.Resources.DeviceRequests {
+			if deviceRequest.Driver == "nvidia" || deviceRequest.Capabilities[0][0] == "gpu" {
+				gpuOptions = &deviceRequest
+			}
+		}
+
+		if gpuOptions == nil {
+			continue
+		}
+
+		if gpuOptions.Count == -1 {
+			gpuUseAll = true
+		}
+
+		for _, id := range gpuOptions.DeviceIDs {
+			gpuUseSet[id] = struct{}{}
 		}
 	}
 
@@ -260,6 +255,7 @@ func dockerSnapshotVersion(snapshot *portainer.DockerSnapshot, cli *client.Clien
 
 	snapshot.SnapshotRaw.Version = version
 	snapshot.IsPodman = isPodman(version)
+
 	return nil
 }
 
@@ -273,20 +269,21 @@ func DockerSnapshotDiagnostics(cli *client.Client, edgeKey string) (*portainer.D
 		},
 	}
 
-	err := dockerSnapshotContainerErrorLogs(snapshot, cli, containerID)
-	if err != nil {
+	if err := dockerSnapshotContainerErrorLogs(snapshot, cli, containerID); err != nil {
 		return nil, err
 	}
 
-	if edgeKey != "" {
-		url, err := edgeutils.GetPortainerURLFromEdgeKey(edgeKey)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get portainer URL from edge key: %w", err)
-		}
-
-		snapshot.DiagnosticsData.DNS["edge-to-portainer"] = networkingutils.ProbeDNSConnection(url)
-		snapshot.DiagnosticsData.Telnet["edge-to-portainer"] = networkingutils.ProbeTelnetConnection(url)
+	if edgeKey == "" {
+		return snapshot.DiagnosticsData, nil
 	}
+
+	url, err := edgeutils.GetPortainerURLFromEdgeKey(edgeKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get portainer URL from edge key: %w", err)
+	}
+
+	snapshot.DiagnosticsData.DNS["edge-to-portainer"] = networkingutils.ProbeDNSConnection(url)
+	snapshot.DiagnosticsData.Telnet["edge-to-portainer"] = networkingutils.ProbeTelnetConnection(url)
 
 	return snapshot.DiagnosticsData, nil
 }
@@ -310,8 +307,7 @@ func dockerSnapshotContainerErrorLogs(snapshot *portainer.DockerSnapshot, cli *c
 	defer rd.Close()
 
 	var stdOut, stdErr bytes.Buffer
-	_, err = stdcopy.StdCopy(&stdErr, &stdOut, rd)
-	if err != nil {
+	if _, err := stdcopy.StdCopy(&stdErr, &stdOut, rd); err != nil {
 		return fmt.Errorf("failed to copy error logs: %w", err)
 	}
 
@@ -334,6 +330,7 @@ func isPodman(version types.Version) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
