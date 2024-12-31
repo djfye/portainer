@@ -13,6 +13,12 @@ import (
 	"github.com/urfave/negroni"
 )
 
+const csrfSkipHeader = "X-CSRF-Token-Skip"
+
+func SkipCSRFToken(w http.ResponseWriter) {
+	w.Header().Set(csrfSkipHeader, "1")
+}
+
 func WithProtect(handler http.Handler) (http.Handler, error) {
 	// IsDockerDesktopExtension is used to check if we should skip csrf checks in the request bouncer (ShouldSkipCSRFCheck)
 	// DOCKER_EXTENSION is set to '1' in build/docker-extension/docker-compose.yml
@@ -42,10 +48,14 @@ func withSendCSRFToken(handler http.Handler) http.Handler {
 		sw := negroni.NewResponseWriter(w)
 
 		sw.Before(func(sw negroni.ResponseWriter) {
-			statusCode := sw.Status()
-			if statusCode >= 200 && statusCode < 300 {
-				csrfToken := gorillacsrf.Token(r)
-				sw.Header().Set("X-CSRF-Token", csrfToken)
+			if len(sw.Header().Get(csrfSkipHeader)) > 0 {
+				sw.Header().Del(csrfSkipHeader)
+
+				return
+			}
+
+			if statusCode := sw.Status(); statusCode >= 200 && statusCode < 300 {
+				sw.Header().Set("X-CSRF-Token", gorillacsrf.Token(r))
 			}
 		})
 
