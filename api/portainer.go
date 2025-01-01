@@ -1395,6 +1395,13 @@ type (
 		Prune                bool
 	}
 
+	ComposeDownOptions struct {
+		// RemoveVolumes will remove the named volumes declared in the compose file
+		// and anonymous volumes attached to the stack's containers
+		// Drives `docker compose down --volumes`
+		RemoveVolumes bool
+	}
+
 	ComposeRunOptions struct {
 		ComposeOptions
 

@@ -64,9 +64,14 @@ type (
 
 	DeployerOptionsPayload struct {
 		// Prune is a flag indicating if the agent must prune the containers or not when creating/updating an edge stack
-		// This flag drives docker compose `--remove-orphans` and docker stack `--prune` options
+		// This flag drives `docker compose up --remove-orphans` and `docker stack up --prune` options
 		// Used only for EE
 		Prune bool
+		// RemoveVolumes is a flag indicating if the agent must remove the named volumes declared
+		// in the compose file and anonymouse volumes attached to containers
+		// This flag drives `docker compose down --volumes` option
+		// Used only for EE
+		RemoveVolumes bool
 	}
 
 	// RegistryCredentials holds the credentials for a Docker registry.
