@@ -100,7 +100,9 @@ func (store *Store) initServices() error {
 	}
 	store.EndpointRelationService = endpointRelationService
 
-	edgeStackService, err := edgestack.NewService(store.connection, endpointRelationService.InvalidateEdgeCacheForEdgeStack)
+	edgeStackService, err := edgestack.NewService(store.connection, func(tx portainer.Transaction, ID portainer.EdgeStackID) {
+		endpointRelationService.Tx(tx).InvalidateEdgeCacheForEdgeStack(ID)
+	})
 	if err != nil {
 		return err
 	}

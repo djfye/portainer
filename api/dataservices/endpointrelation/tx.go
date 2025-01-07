@@ -45,6 +45,10 @@ func (service ServiceTx) Create(endpointRelation *portainer.EndpointRelation) er
 	err := service.tx.CreateObjectWithId(BucketName, int(endpointRelation.EndpointID), endpointRelation)
 	cache.Del(endpointRelation.EndpointID)
 
+	service.service.mu.Lock()
+	service.service.endpointRelationsCache = nil
+	service.service.mu.Unlock()
+
 	return err
 }
 
@@ -60,6 +64,10 @@ func (service ServiceTx) UpdateEndpointRelation(endpointID portainer.EndpointID,
 	}
 
 	updatedRelationState, _ := service.EndpointRelation(endpointID)
+
+	service.service.mu.Lock()
+	service.service.endpointRelationsCache = nil
+	service.service.mu.Unlock()
 
 	service.updateEdgeStacksAfterRelationChange(previousRelationState, updatedRelationState)
 
@@ -77,25 +85,42 @@ func (service ServiceTx) DeleteEndpointRelation(endpointID portainer.EndpointID)
 		return err
 	}
 
+	service.service.mu.Lock()
+	service.service.endpointRelationsCache = nil
+	service.service.mu.Unlock()
+
 	service.updateEdgeStacksAfterRelationChange(deletedRelation, nil)
 
 	return nil
 }
 
 func (service ServiceTx) InvalidateEdgeCacheForEdgeStack(edgeStackID portainer.EdgeStackID) {
-	rels, err := service.EndpointRelations()
+	rels, err := service.cachedEndpointRelations()
 	if err != nil {
 		log.Error().Err(err).Msg("cannot retrieve endpoint relations")
 		return
 	}
 
 	for _, rel := range rels {
-		for id := range rel.EdgeStacks {
-			if edgeStackID == id {
-				cache.Del(rel.EndpointID)
-			}
+		if _, ok := rel.EdgeStacks[edgeStackID]; ok {
+			cache.Del(rel.EndpointID)
 		}
 	}
+}
+
+func (service ServiceTx) cachedEndpointRelations() ([]portainer.EndpointRelation, error) {
+	service.service.mu.Lock()
+	defer service.service.mu.Unlock()
+
+	if service.service.endpointRelationsCache == nil {
+		var err error
+		service.service.endpointRelationsCache, err = service.EndpointRelations()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return service.service.endpointRelationsCache, nil
 }
 
 func (service ServiceTx) updateEdgeStacksAfterRelationChange(previousRelationState *portainer.EndpointRelation, updatedRelationState *portainer.EndpointRelation) {
@@ -133,6 +158,7 @@ func (service ServiceTx) updateEdgeStacksAfterRelationChange(previousRelationSta
 		}
 
 		numDeployments := 0
+
 		for _, r := range relations {
 			for sId, enabled := range r.EdgeStacks {
 				if enabled && sId == refStackId {
