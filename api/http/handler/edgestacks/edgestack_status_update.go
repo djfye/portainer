@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	portainer "github.com/portainer/portainer/api"
@@ -20,6 +21,7 @@ type updateStatusPayload struct {
 	Status     *portainer.EdgeStackStatusType
 	EndpointID portainer.EndpointID
 	Time       int64
+	Version    int
 }
 
 func (payload *updateStatusPayload) Validate(r *http.Request) error {
@@ -69,6 +71,10 @@ func (handler *Handler) edgeStackStatusUpdate(w http.ResponseWriter, r *http.Req
 
 	var stack *portainer.EdgeStack
 	if err := handler.DataStore.UpdateTx(func(tx dataservices.DataStoreTx) error {
+		if r.Context().Err() != nil {
+			return err
+		}
+
 		stack, err = handler.updateEdgeStackStatus(tx, r, portainer.EdgeStackID(stackID), payload)
 		return err
 	}); err != nil {
@@ -80,6 +86,10 @@ func (handler *Handler) edgeStackStatusUpdate(w http.ResponseWriter, r *http.Req
 		return httperror.InternalServerError("Unexpected error", err)
 	}
 
+	if ok, _ := strconv.ParseBool(r.Header.Get("X-Portainer-No-Body")); ok {
+		return nil
+	}
+
 	return response.JSON(w, stack)
 }
 
@@ -87,16 +97,21 @@ func (handler *Handler) updateEdgeStackStatus(tx dataservices.DataStoreTx, r *ht
 	stack, err := tx.EdgeStack().EdgeStack(stackID)
 	if err != nil {
 		if dataservices.IsErrObjectNotFound(err) {
-			// skip error because agent tries to report on deleted stack
+			// Skip error because agent tries to report on deleted stack
 			log.Debug().
 				Err(err).
 				Int("stackID", int(stackID)).
 				Int("status", int(*payload.Status)).
 				Msg("Unable to find a stack inside the database, skipping error")
+
 			return nil, nil
 		}
 
 		return nil, fmt.Errorf("unable to retrieve Edge stack from the database: %w. Environment ID: %d", err, payload.EndpointID)
+	}
+
+	if payload.Version > 0 && payload.Version < stack.Version {
+		return stack, nil
 	}
 
 	endpoint, err := tx.Endpoint().Endpoint(payload.EndpointID)

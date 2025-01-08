@@ -9,7 +9,6 @@ func NewStatus(oldStatus map[portainer.EndpointID]portainer.EdgeStackStatus, rel
 	status := map[portainer.EndpointID]portainer.EdgeStackStatus{}
 
 	for _, environmentID := range relatedEnvironmentIDs {
-
 		newEnvStatus := portainer.EdgeStackStatus{
 			Status:     []portainer.EdgeStackDeploymentStatus{},
 			EndpointID: environmentID,

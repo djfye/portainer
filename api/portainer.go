@@ -370,6 +370,7 @@ type (
 		Error string
 		// EE only feature
 		RollbackTo *int
+		Version    int `json:"Version,omitempty"`
 	}
 
 	// EdgeStackStatusType represents an edge stack status type
