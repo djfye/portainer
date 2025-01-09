@@ -23,11 +23,17 @@ import (
 	"github.com/docker/compose/v2/pkg/compose"
 	"github.com/docker/docker/registry"
 	"github.com/rs/zerolog/log"
+	"github.com/sirupsen/logrus"
 )
 
 const PortainerEdgeStackLabel = "io.portainer.edge_stack_id"
 
 var mu sync.Mutex
+
+func init() {
+	// Redirect Compose logging to zerolog
+	logrus.SetOutput(log.Logger)
+}
 
 func withCli(
 	ctx context.Context,
@@ -36,7 +42,7 @@ func withCli(
 ) error {
 	ctx = context.Background()
 
-	cli, err := command.NewDockerCli()
+	cli, err := command.NewDockerCli(command.WithCombinedStreams(log.Logger))
 	if err != nil {
 		return fmt.Errorf("unable to create a Docker client: %w", err)
 	}
