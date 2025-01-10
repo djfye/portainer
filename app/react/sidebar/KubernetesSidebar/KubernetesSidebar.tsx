@@ -100,24 +100,32 @@ export function KubernetesSidebar({ environmentId }: Props) {
         data-cy="k8sSidebar-volumes"
       />
 
-      <Authorized
-        authorizations="K8sMoreResourcesRW"
-        adminOnlyCE
-        environmentId={environmentId}
+      <SidebarParent
+        label="More Resources"
+        to="kubernetes.moreResources.jobs"
+        pathOptions={{
+          includePaths: [
+            'kubernetes.moreResources.serviceAccounts',
+            'kubernetes.moreResources.clusterRoles',
+            'kubernetes.moreResources.roles',
+          ],
+        }}
+        icon={LayoutList}
+        params={{ endpointId: environmentId }}
+        data-cy="k8sSidebar-moreResources"
+        listId="k8sSidebar-moreResources"
       >
-        <SidebarParent
-          label="More Resources"
-          to="kubernetes.moreResources.serviceAccounts"
-          pathOptions={{
-            includePaths: [
-              'kubernetes.moreResources.clusterRoles',
-              'kubernetes.moreResources.roles',
-            ],
-          }}
-          icon={LayoutList}
+        <SidebarItem
+          to="kubernetes.moreResources.jobs"
           params={{ endpointId: environmentId }}
-          data-cy="k8sSidebar-moreResources"
-          listId="k8sSidebar-moreResources"
+          label="Cron Jobs & Jobs"
+          data-cy="k8sSidebar-jobs"
+          isSubMenu
+        />
+        <Authorized
+          authorizations="K8sMoreResourcesRW"
+          adminOnlyCE
+          environmentId={environmentId}
         >
           <SidebarItem
             to="kubernetes.moreResources.serviceAccounts"
@@ -140,8 +148,8 @@ export function KubernetesSidebar({ environmentId }: Props) {
             data-cy="k8sSidebar-Roles"
             isSubMenu
           />
-        </SidebarParent>
-      </Authorized>
+        </Authorized>
+      </SidebarParent>
 
       <SidebarParent
         label="Cluster"

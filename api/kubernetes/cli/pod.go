@@ -275,3 +275,22 @@ func isPodUsingSecret(pod *corev1.Pod, secretName string) bool {
 
 	return false
 }
+
+// getLatestJobPod returns the pods that are owned by a job
+// it returns an error if there is an error fetching the pods
+func (kcl *KubeClient) getLatestJobPod(namespace string, jobName string) (*corev1.Pod, error) {
+	pods, err := kcl.cli.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pod := range pods.Items {
+		for _, owner := range pod.OwnerReferences {
+			if owner.Kind == "Job" && owner.Name == jobName {
+				return &pod, nil
+			}
+		}
+	}
+
+	return nil, nil
+}

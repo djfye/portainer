@@ -2,7 +2,7 @@ import { CronJob, CronJobList } from 'kubernetes-types/batch/v1';
 import { useQuery } from '@tanstack/react-query';
 
 import { EnvironmentId } from '@/react/portainer/environments/types';
-import { withError } from '@/react-tools/react-query';
+import { withGlobalError } from '@/react-tools/react-query';
 import axios from '@/portainer/services/axios';
 
 import { parseKubernetesAxiosError } from '../axiosError';
@@ -24,7 +24,7 @@ export function useCronJobs(
     queryKeys.cronJobsForCluster(environmentId),
     () => getCronJobsForCluster(environmentId, namespaces),
     {
-      ...withError('Unable to retrieve CronJobs'),
+      ...withGlobalError('Unable to retrieve CronJobs'),
       enabled: !!namespaces?.length,
     }
   );

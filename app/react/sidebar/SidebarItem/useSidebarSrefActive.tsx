@@ -5,7 +5,9 @@ import {
 } from '@uirouter/react';
 
 export type PathOptions = {
+  /** ignorePaths ignores highlighting the sidebar parent when the URL of a sidebar child matches the current URL */
   ignorePaths?: string[];
+  /** includePaths help to highlight the sidebar parent when the URL of a sidebar child matches the current URL */
   includePaths?: string[];
 };
 
