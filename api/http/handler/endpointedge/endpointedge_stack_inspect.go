@@ -1,8 +1,10 @@
 package endpointedge
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/edge"
@@ -13,7 +15,11 @@ import (
 	httperror "github.com/portainer/portainer/pkg/libhttp/error"
 	"github.com/portainer/portainer/pkg/libhttp/request"
 	"github.com/portainer/portainer/pkg/libhttp/response"
+
+	"golang.org/x/sync/singleflight"
 )
+
+var edgeStackSingleFlightGroup = singleflight.Group{}
 
 // @summary Inspect an Edge Stack for an Environment(Endpoint)
 // @description **Access policy**: public
@@ -42,12 +48,25 @@ func (handler *Handler) endpointEdgeStackInspect(w http.ResponseWriter, r *http.
 		return httperror.BadRequest("Invalid edge stack identifier route variable", fmt.Errorf("invalid Edge stack route variable: %w. Environment name: %s", err, endpoint.Name))
 	}
 
-	edgeStack, err := handler.DataStore.EdgeStack().EdgeStack(portainer.EdgeStackID(edgeStackID))
-	if handler.DataStore.IsErrObjectNotFound(err) {
-		return httperror.NotFound("Unable to find an edge stack with the specified identifier inside the database", fmt.Errorf("unable to find the Edge stack from database: %w. Environment name: %s", err, endpoint.Name))
-	} else if err != nil {
-		return httperror.InternalServerError("Unable to find an edge stack with the specified identifier inside the database", fmt.Errorf("failed to find the Edge stack from database: %w. Environment name: %s", err, endpoint.Name))
+	s, err, _ := edgeStackSingleFlightGroup.Do(strconv.Itoa(edgeStackID), func() (any, error) {
+		edgeStack, err := handler.DataStore.EdgeStack().EdgeStack(portainer.EdgeStackID(edgeStackID))
+		if handler.DataStore.IsErrObjectNotFound(err) {
+			return nil, httperror.NotFound("Unable to find an edge stack with the specified identifier inside the database", fmt.Errorf("unable to find the Edge stack from database: %w. Environment name: %s", err, endpoint.Name))
+		}
+
+		return edgeStack, err
+	})
+	if err != nil {
+		var httpErr *httperror.HandlerError
+		if errors.As(err, &httpErr) {
+			return httpErr
+		}
+
+		return httperror.InternalServerError("Unable to find an edge stack with the specified identifier inside the database", fmt.Errorf("failed to find Edge stack from the database: %w. Environment name: %s", err, endpoint.Name))
 	}
+
+	// WARNING: this variable must not be mutated
+	edgeStack := s.(*portainer.EdgeStack)
 
 	fileName := edgeStack.EntryPoint
 	if endpointutils.IsDockerEndpoint(endpoint) {
