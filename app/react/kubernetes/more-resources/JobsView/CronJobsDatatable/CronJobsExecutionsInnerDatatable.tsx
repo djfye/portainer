@@ -33,6 +33,7 @@ export function CronJobsExecutionsInnerDatatable({
       dataset={item}
       columns={columns}
       getRowId={(row) => row.Id}
+      disableSelect
       title="Executions"
       titleIcon={CalendarCheck2}
       data-cy="k8s-cronJobs-executions-datatable"
