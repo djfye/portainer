@@ -30,6 +30,19 @@ func GetPortainerURLFromEdgeKey(edgeKey string) (string, error) {
 	return keyInfo[0], nil
 }
 
+// GetEndpointIDFromEdgeKey returns the endpoint ID from an edge key
+// format: <portainer_instance_url>|<tunnel_server_addr>|<tunnel_server_fingerprint>|<endpoint_id>
+func GetEndpointIDFromEdgeKey(edgeKey string) (int, error) {
+	decodedKey, err := base64.RawStdEncoding.DecodeString(edgeKey)
+	if err != nil {
+		return 0, err
+	}
+
+	keyInfo := strings.Split(string(decodedKey), "|")
+
+	return strconv.Atoi(keyInfo[3])
+}
+
 // IsValidEdgeStackName validates an edge stack name
 // Edge stack name must be between 1 and 255 characters long
 // and can only contain lowercase letters, digits, hyphens and underscores
