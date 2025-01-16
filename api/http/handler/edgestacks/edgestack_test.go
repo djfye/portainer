@@ -144,3 +144,15 @@ func createEdgeStack(t *testing.T, store dataservices.DataStore, endpointID port
 
 	return edgeStack
 }
+
+func createEdgeGroup(t *testing.T, store dataservices.DataStore) portainer.EdgeGroup {
+	edgeGroup := portainer.EdgeGroup{
+		ID:   1,
+		Name: "EdgeGroup 1",
+	}
+
+	if err := store.EdgeGroup().Create(&edgeGroup); err != nil {
+		t.Fatal(err)
+	}
+	return edgeGroup
+}

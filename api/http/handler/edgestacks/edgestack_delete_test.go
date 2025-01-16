@@ -1,12 +1,14 @@
 package edgestacks
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	portainer "github.com/portainer/portainer/api"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/segmentio/encoding/json"
 )
@@ -100,4 +102,53 @@ func TestDeleteInvalidEdgeStack(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeleteEdgeStack_RemoveProjectFolder(t *testing.T) {
+	handler, rawAPIKey := setupHandler(t)
+
+	edgeGroup := createEdgeGroup(t, handler.DataStore)
+
+	payload := edgeStackFromStringPayload{
+		Name:             "test-stack",
+		DeploymentType:   portainer.EdgeStackDeploymentCompose,
+		EdgeGroups:       []portainer.EdgeGroupID{edgeGroup.ID},
+		StackFileContent: "version: '3.7'\nservices:\n  test:\n    image: test",
+	}
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(payload); err != nil {
+		t.Fatal("error encoding payload:", err)
+	}
+
+	// Create
+	req, err := http.NewRequest(http.MethodPost, "/edge_stacks/create/string", &buf)
+	if err != nil {
+		t.Fatal("request error:", err)
+	}
+
+	req.Header.Add("x-api-key", rawAPIKey)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected a %d response, found: %d", http.StatusNoContent, rec.Code)
+	}
+
+	assert.DirExists(t, handler.FileService.GetEdgeStackProjectPath("1"))
+
+	// Delete
+	if req, err = http.NewRequest(http.MethodDelete, "/edge_stacks/1", nil); err != nil {
+		t.Fatal("request error:", err)
+	}
+
+	req.Header.Add("x-api-key", rawAPIKey)
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("expected a %d response, found: %d", http.StatusNoContent, rec.Code)
+	}
+
+	assert.NoDirExists(t, handler.FileService.GetEdgeStackProjectPath("1"))
 }

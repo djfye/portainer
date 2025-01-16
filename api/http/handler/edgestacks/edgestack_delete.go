@@ -3,6 +3,7 @@ package edgestacks
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/dataservices"
@@ -52,9 +53,13 @@ func (handler *Handler) deleteEdgeStack(tx dataservices.DataStoreTx, edgeStackID
 		return httperror.InternalServerError("Unable to find an edge stack with the specified identifier inside the database", err)
 	}
 
-	err = handler.edgeStacksService.DeleteEdgeStack(tx, edgeStack.ID, edgeStack.EdgeGroups)
-	if err != nil {
+	if err := handler.edgeStacksService.DeleteEdgeStack(tx, edgeStack.ID, edgeStack.EdgeGroups); err != nil {
 		return httperror.InternalServerError("Unable to delete edge stack", err)
+	}
+
+	stackFolder := handler.FileService.GetEdgeStackProjectPath(strconv.Itoa(int(edgeStack.ID)))
+	if err := handler.FileService.RemoveDirectory(stackFolder); err != nil {
+		return httperror.InternalServerError("Unable to remove edge stack project folder", err)
 	}
 
 	return nil
