@@ -71,7 +71,7 @@ func (handler *Handler) edgeStackStatusUpdate(w http.ResponseWriter, r *http.Req
 
 	var stack *portainer.EdgeStack
 	if err := handler.DataStore.UpdateTx(func(tx dataservices.DataStoreTx) error {
-		if r.Context().Err() != nil {
+		if err := r.Context().Err(); err != nil {
 			return err
 		}
 
