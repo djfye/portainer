@@ -3,13 +3,15 @@ import { StreamLanguage, LanguageSupport } from '@codemirror/language';
 import { yaml } from '@codemirror/legacy-modes/mode/yaml';
 import { dockerFile } from '@codemirror/legacy-modes/mode/dockerfile';
 import { shell } from '@codemirror/legacy-modes/mode/shell';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { createTheme } from '@uiw/codemirror-themes';
 import { tags as highlightTags } from '@lezer/highlight';
 
 import { AutomationTestingProps } from '@/types';
 
 import { CopyButton } from '@@/buttons/CopyButton';
+
+import { useDebounce } from '../hooks/useDebounce';
 
 import styles from './CodeEditor.module.css';
 import { TextTip } from './Tip/TextTip';
@@ -89,17 +91,17 @@ export function CodeEditor({
     return extensions;
   }, [type]);
 
-  function handleVersionChange(version: number) {
-    if (versions && versions.length > 1) {
-      if (version < versions[0]) {
-        setIsRollback(true);
-      } else {
-        setIsRollback(false);
+  const handleVersionChange = useCallback(
+    (version: number) => {
+      if (versions && versions.length > 1) {
+        setIsRollback(version < versions[0]);
       }
-    }
+      onVersionChange?.(version);
+    },
+    [onVersionChange, versions]
+  );
 
-    onVersionChange?.(version);
-  }
+  const [debouncedValue, debouncedOnChange] = useDebounce(value, onChange);
 
   return (
     <>
@@ -136,8 +138,8 @@ export function CodeEditor({
       <CodeMirror
         className={styles.root}
         theme={theme}
-        value={value}
-        onChange={onChange}
+        value={debouncedValue}
+        onChange={debouncedOnChange}
         readOnly={readonly || isRollback}
         id={id}
         extensions={extensions}

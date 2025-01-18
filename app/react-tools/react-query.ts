@@ -10,8 +10,13 @@ import {
 import { notifyError } from '@/portainer/services/notifications';
 
 /**
- * @deprecated use withGlobalError
- * `onError` and other callbacks are not supported on react-query v5
+ * @deprecated for `useQuery` ONLY. Use `withGlobalError`.
+ *
+ * `onError` and other callbacks are not supported on `useQuery` in react-query v5
+ *
+ * Using `withError` is fine for mutations (`useMutation`)
+ *
+ * see https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose
  */
 export function withError(fallbackMessage?: string, title = 'Failure') {
   return {

@@ -1,5 +1,5 @@
 import { FormikErrors, useFormikContext } from 'formik';
-import { SetStateAction } from 'react';
+import { SetStateAction, useCallback } from 'react';
 
 import { GitForm } from '@/react/portainer/gitops/GitForm';
 import { baseEdgeStackWebhookUrl } from '@/portainer/helpers/webhookHelper';
@@ -36,6 +36,23 @@ interface Props {
 export function DockerComposeForm({ webhookId, onChangeTemplate }: Props) {
   const { errors, values, setValues } = useFormikContext<DockerFormValues>();
   const { method } = values;
+
+  const handleChange = useCallback(
+    (newValues: Partial<DockerFormValues>) => {
+      setValues((values) => ({
+        ...values,
+        ...newValues,
+      }));
+    },
+    [setValues]
+  );
+
+  const saveFileContent = useCallback(
+    (value: string) => {
+      handleChange({ fileContent: value });
+    },
+    [handleChange]
+  );
 
   return (
     <>
@@ -91,7 +108,7 @@ export function DockerComposeForm({ webhookId, onChangeTemplate }: Props) {
       {method === editor.value && (
         <DockerContentField
           value={values.fileContent}
-          onChange={(value) => handleChange({ fileContent: value })}
+          onChange={saveFileContent}
           error={errors?.fileContent}
         />
       )}
@@ -145,13 +162,6 @@ export function DockerComposeForm({ webhookId, onChangeTemplate }: Props) {
       )}
     </>
   );
-
-  function handleChange(newValues: Partial<DockerFormValues>) {
-    setValues((values) => ({
-      ...values,
-      ...newValues,
-    }));
-  }
 }
 
 type TemplateContentFieldProps = {
