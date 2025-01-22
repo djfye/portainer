@@ -64,7 +64,9 @@ export function VolumesDatatable() {
       settingsManager={tableState}
       title="Volumes"
       titleIcon={Database}
-      getRowId={(row) => row.PersistentVolumeClaim.Name}
+      getRowId={(row) =>
+        `${row.PersistentVolumeClaim.Name}-${row.ResourcePool.Namespace.Name}`
+      }
       disableSelect={!hasWriteAuth}
       isRowSelectable={({ original: volume }) =>
         !isSystemNamespace(volume.ResourcePool.Namespace.Name, namespaces) &&

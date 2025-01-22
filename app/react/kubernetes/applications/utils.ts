@@ -69,11 +69,10 @@ export function getTotalPods(
 ): number {
   switch (application.kind) {
     case 'Deployment':
-      return application.status?.replicas ?? 0;
+    case 'StatefulSet':
+      return application.spec?.replicas ?? 0;
     case 'DaemonSet':
       return application.status?.desiredNumberScheduled ?? 0;
-    case 'StatefulSet':
-      return application.status?.replicas ?? 0;
     default:
       throw new Error('Unknown application type');
   }
