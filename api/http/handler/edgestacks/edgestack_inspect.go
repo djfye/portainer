@@ -30,7 +30,7 @@ func (handler *Handler) edgeStackInspect(w http.ResponseWriter, r *http.Request)
 
 	edgeStack, err := handler.DataStore.EdgeStack().EdgeStack(portainer.EdgeStackID(edgeStackID))
 	if err != nil {
-		return handler.handlerDBErr(err, "Unable to find an edge stack with the specified identifier inside the database")
+		return handlerDBErr(err, "Unable to find an edge stack with the specified identifier inside the database")
 	}
 
 	return response.JSON(w, edgeStack)

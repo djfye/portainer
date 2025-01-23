@@ -18,7 +18,7 @@ export function CreateFromManifestButton({
       }}
       data-cy={dataCy}
     >
-      Create from file
+      Create from code
     </AddButton>
   );
 }

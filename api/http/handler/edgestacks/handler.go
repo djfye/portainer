@@ -22,6 +22,7 @@ type Handler struct {
 	GitService         portainer.GitService
 	edgeStacksService  *edgestackservice.Service
 	KubernetesDeployer portainer.KubernetesDeployer
+	stackCoordinator   *EdgeStackStatusUpdateCoordinator
 }
 
 // NewHandler creates a handler to manage environment(endpoint) group operations.
@@ -32,6 +33,10 @@ func NewHandler(bouncer security.BouncerService, dataStore dataservices.DataStor
 		DataStore:         dataStore,
 		edgeStacksService: edgeStacksService,
 	}
+
+	h.stackCoordinator = NewEdgeStackStatusUpdateCoordinator(dataStore, h.updateEdgeStackStatus)
+
+	go h.stackCoordinator.Start()
 
 	h.Handle("/edge_stacks/create/{method}",
 		bouncer.AdminAccess(bouncer.EdgeComputeOperation(httperror.LoggerHandler(h.edgeStackCreate)))).Methods(http.MethodPost)
@@ -58,10 +63,10 @@ func NewHandler(bouncer security.BouncerService, dataStore dataservices.DataStor
 	return h
 }
 
-func (handler *Handler) handlerDBErr(err error, msg string) *httperror.HandlerError {
+func handlerDBErr(err error, msg string) *httperror.HandlerError {
 	httpErr := httperror.InternalServerError(msg, err)
 
-	if handler.DataStore.IsErrObjectNotFound(err) {
+	if dataservices.IsErrObjectNotFound(err) {
 		httpErr.StatusCode = http.StatusNotFound
 	}
 

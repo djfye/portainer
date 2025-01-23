@@ -15,7 +15,6 @@ function buildTestRegistry(
     Name: name,
     Username: '',
     Authentication: false,
-    Password: '',
     BaseURL: '',
     Ecr: { Region: '' },
     Github: { OrganisationName: '', UseOrganisation: false },

@@ -50,7 +50,7 @@ func (*Service) Authenticate(code string, configuration *portainer.OAuthSettings
 		return "", err
 	}
 
-	maps.Copy(idToken, resource)
+	maps.Copy(resource, idToken)
 
 	username, err := GetUsername(resource, configuration.UserIdentifier)
 	if err != nil {

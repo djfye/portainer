@@ -36,5 +36,9 @@ func (handler *Handler) registryList(w http.ResponseWriter, r *http.Request) *ht
 		return httperror.InternalServerError("Unable to retrieve registries from the database", err)
 	}
 
+	for idx := range registries {
+		hideFields(&registries[idx], false)
+	}
+
 	return response.JSON(w, registries)
 }

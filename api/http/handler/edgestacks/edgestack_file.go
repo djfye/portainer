@@ -34,7 +34,7 @@ func (handler *Handler) edgeStackFile(w http.ResponseWriter, r *http.Request) *h
 
 	stack, err := handler.DataStore.EdgeStack().EdgeStack(portainer.EdgeStackID(stackID))
 	if err != nil {
-		return handler.handlerDBErr(err, "Unable to find an edge stack with the specified identifier inside the database")
+		return handlerDBErr(err, "Unable to find an edge stack with the specified identifier inside the database")
 	}
 
 	fileName := stack.EntryPoint

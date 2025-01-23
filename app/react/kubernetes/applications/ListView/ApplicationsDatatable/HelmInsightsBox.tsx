@@ -7,7 +7,7 @@ export function HelmInsightsBox() {
       content={
         <span>
           From 2.20 and on, the Helm menu sidebar option has moved to the{' '}
-          <strong>Create from file screen</strong> - accessed via the button
+          <strong>Create from code screen</strong> - accessed via the button
           above.
         </span>
       }

@@ -70,7 +70,6 @@ export interface Registry {
   BaseURL: string;
   Authentication: boolean;
   Username: string;
-  Password?: string;
   RegistryAccesses: RegistryAccesses | null;
   Gitlab: Gitlab;
   Quay: Quay;
