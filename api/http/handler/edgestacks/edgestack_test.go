@@ -51,10 +51,14 @@ func setupHandler(t *testing.T) (*Handler, string) {
 		t.Fatal(err)
 	}
 
+	coord := NewEdgeStackStatusUpdateCoordinator(store)
+	go coord.Start()
+
 	handler := NewHandler(
 		security.NewRequestBouncer(store, jwtService, apiKeyService),
 		store,
 		edgestacks.NewService(store),
+		coord,
 	)
 
 	handler.FileService = fs

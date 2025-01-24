@@ -5,6 +5,7 @@ class KubernetesConfigurationConverter {
   static secretToConfiguration(secret) {
     const res = new KubernetesConfiguration();
     res.Kind = KubernetesConfigurationKinds.SECRET;
+    res.kind = 'Secret';
     res.Id = secret.Id;
     res.Name = secret.Name;
     res.Type = secret.Type;
@@ -36,6 +37,7 @@ class KubernetesConfigurationConverter {
   static configMapToConfiguration(configMap) {
     const res = new KubernetesConfiguration();
     res.Kind = KubernetesConfigurationKinds.CONFIGMAP;
+    res.kind = 'ConfigMap';
     res.Id = configMap.Id;
     res.Name = configMap.Name;
     res.Namespace = configMap.Namespace;

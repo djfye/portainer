@@ -12,11 +12,9 @@ import (
 )
 
 type statusRequest struct {
-	r        *http.Request
 	respCh   chan statusResponse
-	endpoint *portainer.Endpoint
 	stackID  portainer.EdgeStackID
-	payload  updateStatusPayload
+	updateFn statusUpdateFn
 }
 
 type statusResponse struct {
@@ -24,24 +22,19 @@ type statusResponse struct {
 	Error error
 }
 
-type statusUpdateFn func(stack *portainer.EdgeStack, endpoint *portainer.Endpoint, r *http.Request, stackID portainer.EdgeStackID, payload updateStatusPayload) (*portainer.EdgeStack, error)
+type statusUpdateFn func(*portainer.EdgeStack) (*portainer.EdgeStack, error)
 
 type EdgeStackStatusUpdateCoordinator struct {
-	updateCh       chan statusRequest
-	dataStore      dataservices.DataStore
-	statusUpdateFn statusUpdateFn
+	updateCh  chan statusRequest
+	dataStore dataservices.DataStore
 }
 
 var errAnotherStackUpdateInProgress = errors.New("another stack update is in progress")
 
-func NewEdgeStackStatusUpdateCoordinator(
-	dataStore dataservices.DataStore,
-	statusUpdateFn statusUpdateFn,
-) *EdgeStackStatusUpdateCoordinator {
+func NewEdgeStackStatusUpdateCoordinator(dataStore dataservices.DataStore) *EdgeStackStatusUpdateCoordinator {
 	return &EdgeStackStatusUpdateCoordinator{
-		updateCh:       make(chan statusRequest),
-		dataStore:      dataStore,
-		statusUpdateFn: statusUpdateFn,
+		updateCh:  make(chan statusRequest),
+		dataStore: dataStore,
 	}
 }
 
@@ -69,7 +62,7 @@ func (c *EdgeStackStatusUpdateCoordinator) loop() {
 
 		// 2. Mutate the edge stack opportunistically until there are no more pending updates
 		for {
-			stack, err = c.statusUpdateFn(stack, u.endpoint, u.r, stack.ID, u.payload)
+			stack, err = u.updateFn(stack)
 			if err != nil {
 				return err
 			}
@@ -135,23 +128,14 @@ func (c *EdgeStackStatusUpdateCoordinator) getNextUpdate(stackID portainer.EdgeS
 	}
 }
 
-func (c *EdgeStackStatusUpdateCoordinator) UpdateStatus(
-	r *http.Request,
-	endpoint *portainer.Endpoint,
-	stackID portainer.EdgeStackID,
-	payload updateStatusPayload) (
-	*portainer.EdgeStack,
-	error,
-) {
+func (c *EdgeStackStatusUpdateCoordinator) UpdateStatus(r *http.Request, stackID portainer.EdgeStackID, updateFn statusUpdateFn) (*portainer.EdgeStack, error) {
 	respCh := make(chan statusResponse)
 	defer close(respCh)
 
 	msg := statusRequest{
 		respCh:   respCh,
-		r:        r,
-		endpoint: endpoint,
 		stackID:  stackID,
-		payload:  payload,
+		updateFn: updateFn,
 	}
 
 	select {

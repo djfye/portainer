@@ -3,6 +3,7 @@ package system
 import (
 	"net/http"
 
+	portainer "github.com/portainer/portainer/api"
 	statusutil "github.com/portainer/portainer/api/internal/nodes"
 	"github.com/portainer/portainer/api/internal/snapshot"
 	httperror "github.com/portainer/portainer/pkg/libhttp/error"
@@ -31,14 +32,15 @@ func (handler *Handler) systemNodesCount(w http.ResponseWriter, r *http.Request)
 		return httperror.InternalServerError("Failed to get environment list", err)
 	}
 
-	for i := range endpoints {
-		err = snapshot.FillSnapshotData(handler.dataStore, &endpoints[i])
-		if err != nil {
+	var nodes int
+
+	for _, endpoint := range endpoints {
+		if err := snapshot.FillSnapshotData(handler.dataStore, &endpoint); err != nil {
 			return httperror.InternalServerError("Unable to add snapshot data", err)
 		}
-	}
 
-	nodes := statusutil.NodesCount(endpoints)
+		nodes += statusutil.NodesCount([]portainer.Endpoint{endpoint})
+	}
 
 	return response.JSON(w, &nodesCountResponse{Nodes: nodes})
 }

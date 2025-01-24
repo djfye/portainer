@@ -26,17 +26,14 @@ type Handler struct {
 }
 
 // NewHandler creates a handler to manage environment(endpoint) group operations.
-func NewHandler(bouncer security.BouncerService, dataStore dataservices.DataStore, edgeStacksService *edgestackservice.Service) *Handler {
+func NewHandler(bouncer security.BouncerService, dataStore dataservices.DataStore, edgeStacksService *edgestackservice.Service, stackCoordinator *EdgeStackStatusUpdateCoordinator) *Handler {
 	h := &Handler{
 		Router:            mux.NewRouter(),
 		requestBouncer:    bouncer,
 		DataStore:         dataStore,
 		edgeStacksService: edgeStacksService,
+		stackCoordinator:  stackCoordinator,
 	}
-
-	h.stackCoordinator = NewEdgeStackStatusUpdateCoordinator(dataStore, h.updateEdgeStackStatus)
-
-	go h.stackCoordinator.Start()
 
 	h.Handle("/edge_stacks/create/{method}",
 		bouncer.AdminAccess(bouncer.EdgeComputeOperation(httperror.LoggerHandler(h.edgeStackCreate)))).Methods(http.MethodPost)

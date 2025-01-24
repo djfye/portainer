@@ -77,7 +77,11 @@ func (handler *Handler) edgeStackStatusUpdate(w http.ResponseWriter, r *http.Req
 		return httperror.Forbidden("Permission denied to access environment", fmt.Errorf("unauthorized edge endpoint operation: %w. Environment name: %s", err, endpoint.Name))
 	}
 
-	stack, err := handler.stackCoordinator.UpdateStatus(r, endpoint, portainer.EdgeStackID(stackID), payload)
+	updateFn := func(stack *portainer.EdgeStack) (*portainer.EdgeStack, error) {
+		return handler.updateEdgeStackStatus(stack, endpoint, r, stack.ID, payload)
+	}
+
+	stack, err := handler.stackCoordinator.UpdateStatus(r, portainer.EdgeStackID(stackID), updateFn)
 	if err != nil {
 		var httpErr *httperror.HandlerError
 		if errors.As(err, &httpErr) {
