@@ -29,13 +29,16 @@ export function CreateForm() {
   const [webhookId] = useState(() => createWebhookId());
 
   const [templateParams, setTemplateParams] = useTemplateParams();
-  const templateQuery = useTemplate(templateParams.type, templateParams.id);
+  const templateQuery = useTemplate(
+    templateParams.templateType,
+    templateParams.templateId
+  );
 
   const validation = useValidation(templateQuery);
   const mutation = useCreate({
     webhookId,
     template: templateQuery.customTemplate || templateQuery.appTemplate,
-    templateType: templateParams.type,
+    templateType: templateParams.templateType,
   });
 
   const initialValues = useInitialValues(templateQuery, templateParams);
@@ -53,6 +56,7 @@ export function CreateForm() {
               initialValues={initialValues}
               onSubmit={mutation.onSubmit}
               validationSchema={validation}
+              validateOnMount
             >
               <InnerForm
                 webhookId={webhookId}
@@ -118,8 +122,8 @@ function useInitialValues(
     customTemplate: CustomTemplate | undefined;
   },
   templateParams: {
-    id: number | undefined;
-    type: 'app' | 'custom' | undefined;
+    templateId: number | undefined;
+    templateType: 'app' | 'custom' | undefined;
   }
 ) {
   const template = templateQuery.customTemplate || templateQuery.appTemplate;
@@ -139,7 +143,7 @@ function useInitialValues(
       staggerConfig:
         templateQuery.customTemplate?.EdgeSettings?.StaggerConfig ??
         getDefaultStaggerConfig(),
-      method: templateParams.id ? 'template' : 'editor',
+      method: templateParams.templateId ? 'template' : 'editor',
       git: toGitFormModel(
         templateQuery.customTemplate?.GitConfig,
         parseAutoUpdateResponse()
@@ -149,19 +153,19 @@ function useInitialValues(
         getDefaultRelativePathModel(),
       enableWebhook: false,
       fileContent: '',
-      templateValues: getTemplateValues(templateParams.type, template),
+      templateValues: getTemplateValues(templateParams.templateType, template),
       useManifestNamespaces: false,
     }),
     [
       templateQuery.customTemplate,
-      templateParams.id,
-      templateParams.type,
+      templateParams.templateId,
+      templateParams.templateType,
       template,
     ]
   );
 
   if (
-    templateParams.id &&
+    templateParams.templateId &&
     !templateQuery.customTemplate &&
     !templateQuery.appTemplate
   ) {

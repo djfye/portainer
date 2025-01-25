@@ -28,8 +28,8 @@ const buildMethods = [editor, upload, git, edgeStackTemplate] as const;
 interface Props {
   webhookId: string;
   onChangeTemplate: (change: {
-    type: 'app' | 'custom' | undefined;
-    id: number | undefined;
+    templateType: 'app' | 'custom' | undefined;
+    templateId: number | undefined;
   }) => void;
 }
 
@@ -76,8 +76,8 @@ export function DockerComposeForm({ webhookId, onChangeTemplate }: Props) {
                 values.templateValues
               );
               onChangeTemplate({
-                id: templateValues.templateId,
-                type: templateValues.type,
+                templateId: templateValues.templateId,
+                templateType: templateValues.type,
               });
               setValues((values) => ({
                 ...values,
@@ -145,6 +145,7 @@ export function DockerComposeForm({ webhookId, onChangeTemplate }: Props) {
             <FormSection title="Advanced configurations">
               <RelativePathFieldset
                 values={values.relativePath}
+                errors={errors.relativePath}
                 gitModel={values.git}
                 onChange={(relativePath) =>
                   setValues((values) => ({

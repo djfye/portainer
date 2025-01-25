@@ -29,11 +29,11 @@ export function InnerForm({
   webhookId: string;
   isLoading: boolean;
   onChangeTemplate: ({
-    type,
-    id,
+    templateType,
+    templateId,
   }: {
-    type: 'app' | 'custom' | undefined;
-    id: number | undefined;
+    templateType: 'app' | 'custom' | undefined;
+    templateId: number | undefined;
   }) => void;
 }) {
   const { values, setFieldValue, errors, setValues, setFieldError, isValid } =
@@ -128,6 +128,7 @@ export function InnerForm({
           <StaggerFieldset
             isEdit={false}
             values={values.staggerConfig}
+            errors={errors.staggerConfig}
             onChange={(newStaggerValues) =>
               setFieldValue('staggerConfig', newStaggerValues)
             }

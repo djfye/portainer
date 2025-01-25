@@ -1,15 +1,14 @@
 import { useParamsState } from '@/react/hooks/useParamState';
 
 export function useTemplateParams() {
-  const [{ id, type }, setTemplateParams] = useParamsState(
-    ['templateId', 'templateType'],
+  const [{ templateId, templateType }, setTemplateParams] = useParamsState(
     (params) => ({
-      id: parseTemplateId(params.templateId),
-      type: parseTemplateType(params.templateType),
+      templateId: parseTemplateId(params.templateId),
+      templateType: parseTemplateType(params.templateType),
     })
   );
 
-  return [{ id, type }, setTemplateParams] as const;
+  return [{ templateId, templateType }, setTemplateParams] as const;
 }
 
 function parseTemplateId(param?: string) {

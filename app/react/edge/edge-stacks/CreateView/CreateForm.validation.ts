@@ -17,7 +17,11 @@ import { useCurrentUser } from '@/react/hooks/useUser';
 import { relativePathValidation } from '@/react/portainer/gitops/RelativePathFieldset/validation';
 import { CustomTemplate } from '@/react/portainer/templates/custom-templates/types';
 import { TemplateViewModel } from '@/react/portainer/templates/app-templates/view-model';
-import { DeployMethod, GitFormModel } from '@/react/portainer/gitops/types';
+import {
+  DeployMethod,
+  GitFormModel,
+  RelativePathModel,
+} from '@/react/portainer/gitops/types';
 import { EnvironmentType } from '@/react/portainer/environments/types';
 
 import { envVarValidation } from '@@/form-components/EnvironmentVariablesFieldset';
@@ -133,7 +137,10 @@ export function useValidation({
               );
             },
           }) as SchemaOf<GitFormModel>,
-          relativePath: relativePathValidation(),
+          relativePath: mixed().when('method', {
+            is: 'repository',
+            then: () => relativePathValidation(),
+          }) as SchemaOf<RelativePathModel>,
           useManifestNamespaces: boolean().default(false),
         })
       ),

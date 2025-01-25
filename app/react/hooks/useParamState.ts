@@ -22,32 +22,15 @@ export function useParamState<T>(
 
 /** Use this when you need to use/update multiple params at once. */
 export function useParamsState<T extends Record<string, unknown>>(
-  params: string[],
   parseParams: (params: Record<string, string | undefined>) => T
 ) {
   const { params: stateParams } = useCurrentStateAndParams();
   const router = useRouter();
 
-  const state = parseParams(
-    params.reduce(
-      (acc, param) => {
-        acc[param] = stateParams[param];
-        return acc;
-      },
-      {} as Record<string, string | undefined>
-    )
-  );
+  const state = parseParams(stateParams);
 
   function setState(newState: Partial<T>) {
-    const newStateParams = Object.entries(newState).reduce(
-      (acc, [key, value]) => {
-        acc[key] = value;
-        return acc;
-      },
-      {} as Record<string, unknown>
-    );
-
-    router.stateService.go('.', newStateParams, { reload: false });
+    router.stateService.go('.', newState, { reload: false });
   }
 
   return [state, setState] as const;
