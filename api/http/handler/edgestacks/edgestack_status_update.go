@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -136,7 +137,11 @@ func updateEnvStatus(environmentId portainer.EndpointID, stack *portainer.EdgeSt
 		}
 	}
 
-	environmentStatus.Status = append(environmentStatus.Status, deploymentStatus)
+	if containsStatus := slices.ContainsFunc(environmentStatus.Status, func(e portainer.EdgeStackDeploymentStatus) bool {
+		return e.Type == deploymentStatus.Type
+	}); !containsStatus {
+		environmentStatus.Status = append(environmentStatus.Status, deploymentStatus)
+	}
 
 	stack.Status[environmentId] = environmentStatus
 }
