@@ -207,9 +207,9 @@ angular.module('portainer.docker').controller('ContainerController', [
     async function commitContainerAsync() {
       $scope.config.commitInProgress = true;
       const registryModel = $scope.config.RegistryModel;
-      const imageConfig = ImageHelper.createImageConfigForContainer(registryModel);
+      const { repo, tag } = ImageHelper.createImageConfigForContainer(registryModel);
       try {
-        await commitContainer(endpoint.Id, { container: $transition$.params().id, repo: imageConfig.fromImage });
+        await commitContainer(endpoint.Id, { container: $transition$.params().id, repo, tag });
         Notifications.success('Image created', $transition$.params().id);
         $state.reload();
       } catch (err) {

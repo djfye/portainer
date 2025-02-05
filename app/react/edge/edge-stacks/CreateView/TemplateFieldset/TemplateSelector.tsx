@@ -50,6 +50,7 @@ export function TemplateSelector({
           onChange(getTemplate({ type, id: templateId }), type);
         }}
         data-cy="edge-stacks-create-template-selector"
+        id="edge-stacks-create-template-selector"
       />
       {isLoadingValues && (
         <InlineLoader>Loading template values...</InlineLoader>

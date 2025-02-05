@@ -49,6 +49,7 @@ export function PlacementItem({
             className={clsx({ striked: !!item.needsDeletion })}
             isDisabled={!!item.needsDeletion}
             data-cy={`k8sAppCreate-placementLabel_${index}`}
+            id={`k8sAppCreate-placementLabel_${index}`}
           />
           {placementError?.label && (
             <FormError>{placementError.label}</FormError>
@@ -65,6 +66,7 @@ export function PlacementItem({
             className={clsx({ striked: !!item.needsDeletion })}
             isDisabled={!!item.needsDeletion}
             data-cy={`k8sAppCreate-placementName_${index}`}
+            id={`k8sAppCreate-placementName_${index}`}
           />
           {placementError?.value && (
             <FormError>{placementError.value}</FormError>
