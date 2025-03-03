@@ -60,6 +60,7 @@ export function ConfigurationItem({
               onChange={onSelectConfigMap}
               size="sm"
               data-cy={`k8sAppCreate-add${configurationType}Select_${index}`}
+              id={`k8sAppCreate-add${configurationType}Select_${index}`}
             />
           </InputGroup>
           {formikError?.selectedConfiguration && (

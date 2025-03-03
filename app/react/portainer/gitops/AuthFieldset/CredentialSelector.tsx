@@ -41,6 +41,7 @@ export function CredentialSelector({
             noOptionsMessage={() => 'no saved credentials'}
             inputId="git-creds-selector"
             data-cy="git-credentials-selector"
+            id="git-credentials-selector"
           />
         </FormControl>
       </div>

@@ -107,7 +107,7 @@ func (handler *Handler) updateEdgeStack(tx dataservices.DataStoreTx, stackID por
 
 	hasWrongType, err := hasWrongEnvironmentType(tx.Endpoint(), relatedEndpointIds, payload.DeploymentType)
 	if err != nil {
-		return nil, httperror.BadRequest("unable to check for existence of non fitting environments: %w", err)
+		return nil, httperror.InternalServerError("unable to check for existence of non fitting environments: %w", err)
 	}
 	if hasWrongType {
 		return nil, httperror.BadRequest("edge stack with config do not match the environment type", nil)
@@ -138,48 +138,19 @@ func (handler *Handler) handleChangeEdgeGroups(tx dataservices.DataStoreTx, edge
 		return nil, nil, errors.WithMessage(err, "Unable to retrieve edge stack related environments from database")
 	}
 
-	oldRelatedSet := set.ToSet(oldRelatedEnvironmentIDs)
-	newRelatedSet := set.ToSet(newRelatedEnvironmentIDs)
+	oldRelatedEnvironmentsSet := set.ToSet(oldRelatedEnvironmentIDs)
+	newRelatedEnvironmentsSet := set.ToSet(newRelatedEnvironmentIDs)
 
-	endpointsToRemove := set.Set[portainer.EndpointID]{}
-	for endpointID := range oldRelatedSet {
-		if !newRelatedSet[endpointID] {
-			endpointsToRemove[endpointID] = true
-		}
+	relatedEnvironmentsToAdd := newRelatedEnvironmentsSet.Difference(oldRelatedEnvironmentsSet)
+	relatedEnvironmentsToRemove := oldRelatedEnvironmentsSet.Difference(newRelatedEnvironmentsSet)
+
+	if len(relatedEnvironmentsToRemove) > 0 {
+		tx.EndpointRelation().RemoveEndpointRelationsForEdgeStack(relatedEnvironmentsToRemove.Keys(), edgeStackID)
 	}
 
-	for endpointID := range endpointsToRemove {
-		relation, err := tx.EndpointRelation().EndpointRelation(endpointID)
-		if err != nil {
-			return nil, nil, errors.WithMessage(err, "Unable to find environment relation in database")
-		}
-
-		delete(relation.EdgeStacks, edgeStackID)
-
-		if err := tx.EndpointRelation().UpdateEndpointRelation(endpointID, relation); err != nil {
-			return nil, nil, errors.WithMessage(err, "Unable to persist environment relation in database")
-		}
+	if len(relatedEnvironmentsToAdd) > 0 {
+		tx.EndpointRelation().AddEndpointRelationsForEdgeStack(relatedEnvironmentsToAdd.Keys(), edgeStackID)
 	}
 
-	endpointsToAdd := set.Set[portainer.EndpointID]{}
-	for endpointID := range newRelatedSet {
-		if !oldRelatedSet[endpointID] {
-			endpointsToAdd[endpointID] = true
-		}
-	}
-
-	for endpointID := range endpointsToAdd {
-		relation, err := tx.EndpointRelation().EndpointRelation(endpointID)
-		if err != nil {
-			return nil, nil, errors.WithMessage(err, "Unable to find environment relation in database")
-		}
-
-		relation.EdgeStacks[edgeStackID] = true
-
-		if err := tx.EndpointRelation().UpdateEndpointRelation(endpointID, relation); err != nil {
-			return nil, nil, errors.WithMessage(err, "Unable to persist environment relation in database")
-		}
-	}
-
-	return newRelatedEnvironmentIDs, endpointsToAdd, nil
+	return newRelatedEnvironmentIDs, relatedEnvironmentsToAdd, nil
 }

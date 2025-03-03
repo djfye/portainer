@@ -99,10 +99,13 @@ func (service *Service) PersistEdgeStack(
 	stack.ManifestPath = manifestPath
 	stack.ProjectPath = projectPath
 	stack.EntryPoint = composePath
-	stack.NumDeployments = len(relatedEndpointIds)
 
 	if err := tx.EdgeStack().Create(stack.ID, stack); err != nil {
 		return nil, err
+	}
+
+	if err := tx.EndpointRelation().AddEndpointRelationsForEdgeStack(relatedEndpointIds, stack.ID); err != nil {
+		return nil, fmt.Errorf("unable to add endpoint relations: %w", err)
 	}
 
 	if err := service.updateEndpointRelations(tx, stack.ID, relatedEndpointIds); err != nil {
@@ -119,6 +122,9 @@ func (service *Service) updateEndpointRelations(tx dataservices.DataStoreTx, edg
 	for _, endpointID := range relatedEndpointIds {
 		relation, err := endpointRelationService.EndpointRelation(endpointID)
 		if err != nil {
+			if tx.IsErrObjectNotFound(err) {
+				continue
+			}
 			return fmt.Errorf("unable to find endpoint relation in database: %w", err)
 		}
 
@@ -144,17 +150,8 @@ func (service *Service) DeleteEdgeStack(tx dataservices.DataStoreTx, edgeStackID
 		return errors.WithMessage(err, "Unable to retrieve edge stack related environments from database")
 	}
 
-	for _, endpointID := range relatedEndpointIds {
-		relation, err := tx.EndpointRelation().EndpointRelation(endpointID)
-		if err != nil {
-			return errors.WithMessage(err, "Unable to find environment relation in database")
-		}
-
-		delete(relation.EdgeStacks, edgeStackID)
-
-		if err := tx.EndpointRelation().UpdateEndpointRelation(endpointID, relation); err != nil {
-			return errors.WithMessage(err, "Unable to persist environment relation in database")
-		}
+	if err := tx.EndpointRelation().RemoveEndpointRelationsForEdgeStack(relatedEndpointIds, edgeStackID); err != nil {
+		return errors.WithMessage(err, "unable to remove environment relation in database")
 	}
 
 	if err := tx.EdgeStack().DeleteEdgeStack(edgeStackID); err != nil {

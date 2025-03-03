@@ -45,6 +45,7 @@ export function GroupSelector() {
       placeholder="Select a group"
       isClearable
       data-cy="edge-devices-assignment-selector"
+      id="edge-devices-assignment-selector"
     />
   );
 

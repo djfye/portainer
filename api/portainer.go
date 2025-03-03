@@ -588,7 +588,7 @@ type (
 		// User identifier
 		UserID UserID `json:"UserId" example:"1"`
 		// Helm repository URL
-		URL string `json:"URL" example:"https://charts.bitnami.com/bitnami"`
+		URL string `json:"URL" example:"https://kubernetes.github.io/ingress-nginx"`
 	}
 
 	// QuayRegistryData represents data required for Quay registry to work
@@ -984,8 +984,8 @@ type (
 		KubeconfigExpiry string `json:"KubeconfigExpiry" example:"24h"`
 		// Whether telemetry is enabled
 		EnableTelemetry bool `json:"EnableTelemetry" example:"false"`
-		// Helm repository URL, defaults to "https://charts.bitnami.com/bitnami"
-		HelmRepositoryURL string `json:"HelmRepositoryURL" example:"https://charts.bitnami.com/bitnami"`
+		// Helm repository URL, defaults to ""
+		HelmRepositoryURL string `json:"HelmRepositoryURL"`
 		// KubectlImage, defaults to portainer/kubectl-shell
 		KubectlShellImage string `json:"KubectlShellImage" example:"portainer/kubectl-shell"`
 		// TrustOnFirstConnect makes Portainer accepting edge agent connection by default
@@ -1491,7 +1491,8 @@ type (
 		StoreSSLCertPair(cert, key []byte) (string, string, error)
 		CopySSLCertPair(certPath, keyPath string) (string, string, error)
 		CopySSLCACert(caCertPath string) (string, error)
-		StoreMTLSCertificates(cert, caCert, key []byte) (string, string, string, error)
+		StoreMTLSCertificates(caCert, cert, key []byte) (string, string, string, error)
+		GetMTLSCertificates() (string, string, string, error)
 		GetDefaultChiselPrivateKeyPath() string
 		StoreChiselPrivateKey(privateKey []byte) error
 	}
@@ -1636,9 +1637,9 @@ type (
 
 const (
 	// APIVersion is the version number of the Portainer API
-	APIVersion = "2.26.0"
+	APIVersion = "2.27.1"
 	// Support annotation for the API version ("STS" for Short-Term Support or "LTS" for Long-Term Support)
-	APIVersionSupport = "STS"
+	APIVersionSupport = "LTS"
 	// Edition is what this edition of Portainer is called
 	Edition = PortainerCE
 	// ComposeSyntaxMaxVersion is a maximum supported version of the docker compose syntax
@@ -1672,8 +1673,8 @@ const (
 	DefaultEdgeAgentCheckinIntervalInSeconds = 5
 	// DefaultTemplatesURL represents the URL to the official templates supported by Portainer
 	DefaultTemplatesURL = "https://raw.githubusercontent.com/portainer/templates/v3/templates.json"
-	// DefaultHelmrepositoryURL represents the URL to the official templates supported by Bitnami
-	DefaultHelmRepositoryURL = "https://charts.bitnami.com/bitnami"
+	// DefaultHelmrepositoryURL set to empty string until oci support is added
+	DefaultHelmRepositoryURL = ""
 	// DefaultUserSessionTimeout represents the default timeout after which the user session is cleared
 	DefaultUserSessionTimeout = "8h"
 	// DefaultUserSessionTimeout represents the default timeout after which the user session is cleared

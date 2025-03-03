@@ -9,6 +9,8 @@ import (
 	"github.com/portainer/portainer/api/dataservices/errors"
 )
 
+var _ dataservices.DataStore = &testDatastore{}
+
 type testDatastore struct {
 	customTemplate          dataservices.CustomTemplateService
 	edgeGroup               dataservices.EdgeGroupService
@@ -221,6 +223,30 @@ func (s *stubEndpointRelationService) UpdateEndpointRelation(ID portainer.Endpoi
 	for i, r := range s.relations {
 		if r.EndpointID == ID {
 			s.relations[i] = *relation
+		}
+	}
+
+	return nil
+}
+
+func (s *stubEndpointRelationService) AddEndpointRelationsForEdgeStack(endpointIDs []portainer.EndpointID, edgeStackID portainer.EdgeStackID) error {
+	for _, endpointID := range endpointIDs {
+		for i, r := range s.relations {
+			if r.EndpointID == endpointID {
+				s.relations[i].EdgeStacks[edgeStackID] = true
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *stubEndpointRelationService) RemoveEndpointRelationsForEdgeStack(endpointIDs []portainer.EndpointID, edgeStackID portainer.EdgeStackID) error {
+	for _, endpointID := range endpointIDs {
+		for i, r := range s.relations {
+			if r.EndpointID == endpointID {
+				delete(s.relations[i].EdgeStacks, edgeStackID)
+			}
 		}
 	}
 

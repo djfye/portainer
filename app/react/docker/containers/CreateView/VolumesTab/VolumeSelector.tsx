@@ -44,6 +44,7 @@ export function VolumeSelector({
       onChange={(vol) => onChange(vol?.Name)}
       inputId={inputId}
       data-cy="docker-containers-volume-selector"
+      id="docker-containers-volume-selector"
       size="sm"
     />
   );

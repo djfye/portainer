@@ -35,6 +35,7 @@ export function NamespaceAccessUsersSelector({
       closeMenuOnSelect={false}
       onChange={onChange}
       data-cy={dataCy}
+      id={dataCy}
       inputId={inputId}
       placeholder={placeholder}
       components={{ MultiValueLabel, Option: OptionComponent }}

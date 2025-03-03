@@ -97,6 +97,7 @@ function InnerSelector({
       placeholder="Select one or multiple group(s)"
       closeMenuOnSelect={false}
       data-cy="edge-stacks-groups-selector"
+      id="edge-stacks-groups-selector"
       inputId={inputId}
     />
   ) : (

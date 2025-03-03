@@ -144,6 +144,7 @@ export function PersistedFolderItem({
                   applicationValues.Containers.length > 1
                 }
                 data-cy={`k8sAppCreate-persistentFolderSizeUnitSelect_${index}`}
+                id={`k8sAppCreate-persistentFolderSizeUnitSelect_${index}`}
               />
             </InputGroup>
             {formikError?.size && <FormError>{formikError?.size}</FormError>}
@@ -175,6 +176,7 @@ export function PersistedFolderItem({
                 storageClasses.length <= 1
               }
               data-cy={`k8sAppCreate-storageSelect_${index}`}
+              id={`k8sAppCreate-storageSelect_${index}`}
             />
           </InputGroup>
         </>
@@ -207,6 +209,7 @@ export function PersistedFolderItem({
               availableVolumes.length < 1
             }
             data-cy={`k8sAppCreate-pvcSelect_${index}`}
+            id={`k8sAppCreate-pvcSelect_${index}`}
           />
         </InputGroup>
       )}

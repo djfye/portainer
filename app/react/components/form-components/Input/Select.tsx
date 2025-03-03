@@ -18,6 +18,7 @@ export function Select<T extends number | string>({
   options,
   className,
   'data-cy': dataCy,
+  id,
   ...props
 }: Props<T> & SelectHTMLAttributes<HTMLSelectElement>) {
   return (

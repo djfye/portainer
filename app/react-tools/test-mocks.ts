@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import { QueryObserverResult } from '@tanstack/react-query';
 
 import { Team } from '@/react/portainer/users/teams/types';
 import { Role, User, UserId } from '@/portainer/users/types';
@@ -133,4 +134,39 @@ export function createMockEnvironment(): Environment {
       summary: '',
     },
   };
+}
+
+export function createMockQueryResult<TData, TError = unknown>(
+  data: TData,
+  overrides?: Partial<QueryObserverResult<TData, TError>>
+) {
+  const defaultResult = {
+    data,
+    dataUpdatedAt: 0,
+    error: null,
+    errorUpdatedAt: 0,
+    failureCount: 0,
+    errorUpdateCount: 0,
+    failureReason: null,
+    isError: false,
+    isFetched: true,
+    isFetchedAfterMount: true,
+    isFetching: false,
+    isInitialLoading: false,
+    isLoading: false,
+    isLoadingError: false,
+    isPaused: false,
+    isPlaceholderData: false,
+    isPreviousData: false,
+    isRefetchError: false,
+    isRefetching: false,
+    isStale: false,
+    isSuccess: true,
+    refetch: async () => defaultResult,
+    remove: () => {},
+    status: 'success',
+    fetchStatus: 'idle',
+  };
+
+  return { ...defaultResult, ...overrides };
 }
