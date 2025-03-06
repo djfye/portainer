@@ -36,6 +36,7 @@ export function UsersSelector({
         onChange(selectedUsers.map((user) => user.Id))
       }
       data-cy={dataCy}
+      id={dataCy}
       inputId={inputId}
       placeholder={placeholder}
       isDisabled={disabled}

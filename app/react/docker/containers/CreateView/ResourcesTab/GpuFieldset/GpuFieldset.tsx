@@ -152,6 +152,7 @@ export function GpuFieldset({
               options={options}
               components={{ MultiValueRemove }}
               data-cy="docker-containers-gpu-select"
+              id="docker-containers-gpu-select"
             />
           </div>
         )}
@@ -173,6 +174,7 @@ export function GpuFieldset({
                 components={{ Option }}
                 onChange={onChangeSelectedCaps}
                 data-cy="docker-containers-gpu-capabilities-select"
+                id="docker-containers-gpu-capabilities-select"
               />
             </div>
           </div>

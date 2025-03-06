@@ -1,5 +1,4 @@
 import { CellContext, Column } from '@tanstack/react-table';
-import { useSref } from '@uirouter/react';
 
 import { truncate } from '@/portainer/filters/filters';
 import { getValueAsArrayOfStrings } from '@/portainer/helpers/array';
@@ -7,6 +6,7 @@ import { ImagesListResponse } from '@/react/docker/images/queries/useImages';
 
 import { MultipleSelectionFilter } from '@@/datatables/Filter';
 import { UnusedBadge } from '@@/Badge/UnusedBadge';
+import { Link } from '@@/Link';
 
 import { columnHelper } from './helper';
 
@@ -62,22 +62,20 @@ function FilterByUsage<TData extends { Used: boolean }>({
 }
 
 function Cell({
-  getValue,
-  row: { original: image },
+  row: { original: item },
 }: CellContext<ImagesListResponse, string>) {
-  const name = getValue();
-
-  const linkProps = useSref('.image', {
-    id: image.id,
-    imageId: image.id,
-  });
-
   return (
-    <div className="flex gap-1">
-      <a href={linkProps.href} onClick={linkProps.onClick} title={name}>
-        {truncate(name, 40)}
-      </a>
-      {!image.used && <UnusedBadge />}
-    </div>
+    <>
+      <Link
+        to=".image"
+        params={{ id: item.id, nodeName: item.nodeName }}
+        title={item.id}
+        data-cy={`image-link-${item.id}`}
+        className="mr-2"
+      >
+        {truncate(item.id, 40)}
+      </Link>
+      {!item.used && <UnusedBadge />}
+    </>
   );
 }

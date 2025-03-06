@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -31,8 +32,10 @@ const PortainerEdgeStackLabel = "io.portainer.edge_stack_id"
 var mu sync.Mutex
 
 func init() {
-	// Redirect Compose logging to zerolog
-	logrus.SetOutput(log.Logger)
+	logrus.SetOutput(&LogrusToZerologWriter{})
+	logrus.SetFormatter(&logrus.TextFormatter{
+		DisableTimestamp: true,
+	})
 }
 
 func withCli(
@@ -85,7 +88,7 @@ func withComposeService(
 			return composeFn(composeService, nil)
 		}
 
-		env, err := parseEnvironment(options)
+		env, err := parseEnvironment(options, filePaths)
 		if err != nil {
 			return err
 		}
@@ -324,7 +327,7 @@ func addServiceLabels(project *types.Project, oneOff bool, edgeStackID portainer
 	}
 }
 
-func parseEnvironment(options libstack.Options) (map[string]string, error) {
+func parseEnvironment(options libstack.Options, filePaths []string) (map[string]string, error) {
 	env := make(map[string]string)
 
 	for _, envLine := range options.Env {
@@ -337,7 +340,22 @@ func parseEnvironment(options libstack.Options) (map[string]string, error) {
 	}
 
 	if options.EnvFilePath == "" {
-		return env, nil
+		if len(filePaths) == 0 {
+			return env, nil
+		}
+
+		defaultDotEnv := filepath.Join(filepath.Dir(filePaths[0]), ".env")
+		s, err := os.Stat(defaultDotEnv)
+		if os.IsNotExist(err) {
+			return env, nil
+		}
+		if err != nil {
+			return env, err
+		}
+		if s.IsDir() {
+			return env, nil
+		}
+		options.EnvFilePath = defaultDotEnv
 	}
 
 	e, err := dotenv.GetEnvFromFile(make(map[string]string), []string{options.EnvFilePath})
