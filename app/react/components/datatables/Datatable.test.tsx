@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
 import {
   createColumnHelper,
@@ -154,6 +155,81 @@ describe('Datatable', () => {
     );
 
     expect(screen.getByText('No data available')).toBeInTheDocument();
+  });
+
+  it('selects/deselects only page rows when select all is clicked', () => {
+    render(
+      <Datatable
+        dataset={mockData}
+        columns={mockColumns}
+        settingsManager={{ ...mockSettingsManager, pageSize: 2 }}
+        data-cy="test-table"
+      />
+    );
+
+    const selectAllCheckbox = screen.getByLabelText('Select all rows');
+    fireEvent.click(selectAllCheckbox);
+
+    // Check if all rows on the page are selected
+    expect(screen.getByText('2 items selected')).toBeInTheDocument();
+
+    // Deselect
+    fireEvent.click(selectAllCheckbox);
+    const checkboxes: HTMLInputElement[] = screen.queryAllByRole('checkbox');
+    expect(checkboxes.filter((checkbox) => checkbox.checked).length).toBe(0);
+  });
+
+  it('selects/deselects all rows including other pages when select all is clicked with shift key', () => {
+    render(
+      <Datatable
+        dataset={mockData}
+        columns={mockColumns}
+        settingsManager={{ ...mockSettingsManager, pageSize: 2 }}
+        data-cy="test-table"
+      />
+    );
+
+    const selectAllCheckbox = screen.getByLabelText('Select all rows');
+    fireEvent.click(selectAllCheckbox, { shiftKey: true });
+
+    // Check if all rows on the page are selected
+    expect(screen.getByText('3 items selected')).toBeInTheDocument();
+
+    // Deselect
+    fireEvent.click(selectAllCheckbox, { shiftKey: true });
+    const checkboxes: HTMLInputElement[] = screen.queryAllByRole('checkbox');
+    expect(checkboxes.filter((checkbox) => checkbox.checked).length).toBe(0);
+  });
+
+  it('shows indeterminate state and correct footer text when hidden rows are selected', async () => {
+    const user = userEvent.setup();
+    render(
+      <DatatableWithStore
+        dataset={mockData}
+        columns={mockColumns}
+        data-cy="test-table"
+        title="Test table with search"
+      />
+    );
+
+    // Select Jane
+    const checkboxes = screen.getAllByRole('checkbox');
+    await user.click(checkboxes[2]); // Select the second row
+
+    // Search for John (will hide selected Jane)
+    const searchInput = screen.getByPlaceholderText('Search...');
+    await user.type(searchInput, 'John');
+
+    // Check if the footer text is correct
+    expect(
+      await screen.findByText('1 item selected (1 hidden by filters)')
+    ).toBeInTheDocument();
+
+    // Check if the checkbox is indeterminate
+    const selectAllCheckbox: HTMLInputElement =
+      screen.getByLabelText('Select all rows');
+    expect(selectAllCheckbox.indeterminate).toBe(true);
+    expect(selectAllCheckbox.checked).toBe(false);
   });
 });
 

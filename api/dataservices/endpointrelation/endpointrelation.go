@@ -22,6 +22,8 @@ type Service struct {
 	mu                     sync.Mutex
 }
 
+var _ dataservices.EndpointRelationService = &Service{}
+
 func (service *Service) BucketName() string {
 	return BucketName
 }
@@ -107,6 +109,18 @@ func (service *Service) UpdateEndpointRelation(endpointID portainer.EndpointID, 
 	service.updateEdgeStacksAfterRelationChange(previousRelationState, updatedRelationState)
 
 	return nil
+}
+
+func (service *Service) AddEndpointRelationsForEdgeStack(endpointIDs []portainer.EndpointID, edgeStackID portainer.EdgeStackID) error {
+	return service.connection.ViewTx(func(tx portainer.Transaction) error {
+		return service.Tx(tx).AddEndpointRelationsForEdgeStack(endpointIDs, edgeStackID)
+	})
+}
+
+func (service *Service) RemoveEndpointRelationsForEdgeStack(endpointIDs []portainer.EndpointID, edgeStackID portainer.EdgeStackID) error {
+	return service.connection.ViewTx(func(tx portainer.Transaction) error {
+		return service.Tx(tx).RemoveEndpointRelationsForEdgeStack(endpointIDs, edgeStackID)
+	})
 }
 
 // DeleteEndpointRelation deletes an Environment(Endpoint) relation object

@@ -104,6 +104,7 @@ export function TagSelector({
           onCreateOption={handleCreateOption}
           aria-label="Tags"
           data-cy="environment-tags-selector"
+          id="environment-tags-selector"
         />
       </FormControl>
     </>

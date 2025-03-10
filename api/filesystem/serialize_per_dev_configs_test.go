@@ -90,3 +90,24 @@ func TestMultiFilterDirForPerDevConfigs(t *testing.T) {
 		})
 	}
 }
+
+func TestIsInConfigDir(t *testing.T) {
+	f := func(dirEntry DirEntry, configPath string, expect bool) {
+		t.Helper()
+
+		actual := isInConfigDir(dirEntry, configPath)
+		assert.Equal(t, expect, actual)
+	}
+
+	f(DirEntry{Name: "edge-configs"}, "edge-configs", false)
+	f(DirEntry{Name: "edge-configs_backup"}, "edge-configs", false)
+	f(DirEntry{Name: "edge-configs/standalone-edge-agent-standard"}, "edge-configs", true)
+	f(DirEntry{Name: "parent/edge-configs/"}, "edge-configs", false)
+	f(DirEntry{Name: "edgestacktest"}, "edgestacktest/edge-configs", false)
+	f(DirEntry{Name: "edgestacktest/edgeconfigs-test.yaml"}, "edgestacktest/edge-configs", false)
+	f(DirEntry{Name: "edgestacktest/file1.conf"}, "edgestacktest/edge-configs", false)
+	f(DirEntry{Name: "edgeconfigs-test.yaml"}, "edgestacktest/edge-configs", false)
+	f(DirEntry{Name: "edgestacktest/edge-configs"}, "edgestacktest/edge-configs", false)
+	f(DirEntry{Name: "edgestacktest/edge-configs/standalone-edge-agent-async"}, "edgestacktest/edge-configs", true)
+	f(DirEntry{Name: "edgestacktest/edge-configs/abc.txt"}, "edgestacktest/edge-configs", true)
+}

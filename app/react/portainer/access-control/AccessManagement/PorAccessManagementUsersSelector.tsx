@@ -37,6 +37,7 @@ export function PorAccessManagementUsersSelector({
             closeMenuOnSelect={false}
             onChange={onChange}
             data-cy="component-selectUser"
+            id="component-selectUser"
             inputId="users-selector"
             placeholder="Select one or more users and/or teams"
             components={{ MultiValueLabel, Option: OptionComponent }}

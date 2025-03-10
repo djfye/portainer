@@ -112,6 +112,7 @@ export function TimeWindowPickerInputGroup({
             onChangeTimeZone(newTimeZone.value);
           }}
           data-cy="time-window-picker-timezone-select"
+          id="time-window-picker-timezone-select"
         />
       </div>
       {errors?.StartTime && <FormError>{errors.StartTime}</FormError>}

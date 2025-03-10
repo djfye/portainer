@@ -1,6 +1,18 @@
-import { ColumnDef, Row } from '@tanstack/react-table';
+import { ColumnDef, Row, Table } from '@tanstack/react-table';
 
 import { Checkbox } from '@@/form-components/Checkbox';
+
+function allRowsSelected<T>(table: Table<T>) {
+  return table.getCoreRowModel().rows.every((row) => row.getIsSelected());
+}
+
+function someRowsSelected<T>(table: Table<T>) {
+  return table.getCoreRowModel().rows.some((row) => row.getIsSelected());
+}
+
+function somePageRowsSelected<T>(table: Table<T>) {
+  return table.getRowModel().rows.some((row) => row.getIsSelected());
+}
 
 export function createSelectColumn<T>(dataCy: string): ColumnDef<T> {
   let lastSelectedId = '';
@@ -11,15 +23,22 @@ export function createSelectColumn<T>(dataCy: string): ColumnDef<T> {
       <Checkbox
         id="select-all"
         data-cy={`select-all-checkbox-${dataCy}`}
-        checked={table.getIsAllRowsSelected()}
-        indeterminate={table.getIsSomeRowsSelected()}
-        onChange={table.getToggleAllRowsSelectedHandler()}
+        checked={allRowsSelected(table)}
+        indeterminate={!allRowsSelected(table) && someRowsSelected(table)}
+        onChange={(e) => {
+          // Select all rows if shift key is held down, otherwise only page rows
+          if (e.nativeEvent instanceof MouseEvent && e.nativeEvent.shiftKey) {
+            table.toggleAllRowsSelected();
+            return;
+          }
+          table.toggleAllPageRowsSelected(!somePageRowsSelected(table));
+        }}
         disabled={table.getRowModel().rows.every((row) => !row.getCanSelect())}
         onClick={(e) => {
           e.stopPropagation();
         }}
         aria-label="Select all rows"
-        title="Select all rows"
+        title="Select all rows. Hold shift key to select across all pages."
       />
     ),
     cell: ({ row, table }) => (

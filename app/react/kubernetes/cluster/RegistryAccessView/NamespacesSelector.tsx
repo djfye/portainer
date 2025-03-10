@@ -43,6 +43,7 @@ export function NamespacesSelector({
         onChange(selectedTeams.map((namespace) => namespace.name))
       }
       data-cy={dataCy}
+      id={dataCy}
       inputId={inputId}
       placeholder={placeholder}
     />

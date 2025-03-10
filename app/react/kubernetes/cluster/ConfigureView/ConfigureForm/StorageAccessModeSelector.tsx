@@ -35,6 +35,7 @@ export function StorageAccessModeSelector({
       inputId={inputId}
       placeholder="Not configured"
       data-cy={`kubeSetup-storageAccessSelect${storageClassName}`}
+      id={`kubeSetup-storageAccessSelect${storageClassName}`}
     />
   );
 }

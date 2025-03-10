@@ -122,6 +122,7 @@ export function AppIngressPathForm({
               onChangeIngressPath(newIngressPath);
             }}
             data-cy="k8sAppCreate-ingressPathHostSelect"
+            id="k8sAppCreate-ingressPathHostSelect"
           />
           <InputGroup.ButtonWrapper>
             <Button

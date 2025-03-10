@@ -40,17 +40,10 @@ export function useDocsUrl(doc?: string): string {
   }
 
   let url = 'https://docs.portainer.io/';
-  if (versionQuery.data) {
-    let { ServerVersion } = versionQuery.data;
-    if (ServerVersion[0] === 'v') {
-      ServerVersion = ServerVersion.substring(1);
-    }
 
-    const parts = ServerVersion.split('.');
-    if (parts.length >= 2) {
-      const version = parts.slice(0, 2).join('.');
-      url += `v/${version}`;
-    }
+  // Add LTS or STS version if we have it
+  if (versionQuery.data?.VersionSupport) {
+    url += versionQuery.data.VersionSupport.toLowerCase();
   }
 
   if (doc) {

@@ -102,6 +102,7 @@ export function PrivateRegistryFieldset({
                   onChange={(value) => onSelect(value?.Id)}
                   className="w-full"
                   data-cy="private-registry-selector"
+                  id="private-registry-selector"
                 />
                 {method !== 'repository' && (
                   <Button

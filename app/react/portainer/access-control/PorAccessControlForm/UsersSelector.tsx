@@ -26,6 +26,7 @@ export function PorAccessControlFormUserSelector({
       closeMenuOnSelect={false}
       onChange={onChange}
       data-cy="portainer-selectUserAccess"
+      id="portainer-selectUserAccess"
       inputId={inputId}
       placeholder="Select one or more users"
     />

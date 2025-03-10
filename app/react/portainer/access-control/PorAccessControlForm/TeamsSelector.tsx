@@ -26,6 +26,7 @@ export function PorAccessControlFormTeamSelector({
       closeMenuOnSelect={false}
       onChange={onChange}
       data-cy="portainer-selectTeamAccess"
+      id="portainer-selectTeamAccess"
       inputId={inputId}
       placeholder="Select one or more teams"
     />

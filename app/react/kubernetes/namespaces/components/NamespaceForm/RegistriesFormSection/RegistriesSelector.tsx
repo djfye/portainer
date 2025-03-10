@@ -67,6 +67,7 @@ export function RegistriesSelector({
       onChange={onChange}
       inputId={inputId}
       data-cy="namespaceCreate-registrySelect"
+      id="namespaceCreate-registrySelect"
       placeholder="Select one or more registries"
       isDisabled={isEditingDisabled}
     />

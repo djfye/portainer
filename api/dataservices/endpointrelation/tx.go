@@ -13,6 +13,8 @@ type ServiceTx struct {
 	tx      portainer.Transaction
 }
 
+var _ dataservices.EndpointRelationService = &ServiceTx{}
+
 func (service ServiceTx) BucketName() string {
 	return BucketName
 }
@@ -70,6 +72,58 @@ func (service ServiceTx) UpdateEndpointRelation(endpointID portainer.EndpointID,
 	service.service.mu.Unlock()
 
 	service.updateEdgeStacksAfterRelationChange(previousRelationState, updatedRelationState)
+
+	return nil
+}
+
+func (service ServiceTx) AddEndpointRelationsForEdgeStack(endpointIDs []portainer.EndpointID, edgeStackID portainer.EdgeStackID) error {
+	for _, endpointID := range endpointIDs {
+		rel, err := service.EndpointRelation(endpointID)
+		if err != nil {
+			return err
+		}
+
+		rel.EdgeStacks[edgeStackID] = true
+
+		identifier := service.service.connection.ConvertToKey(int(endpointID))
+		err = service.tx.UpdateObject(BucketName, identifier, rel)
+		cache.Del(endpointID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := service.service.updateStackFnTx(service.tx, edgeStackID, func(edgeStack *portainer.EdgeStack) {
+		edgeStack.NumDeployments += len(endpointIDs)
+	}); err != nil {
+		log.Error().Err(err).Msg("could not update the number of deployments")
+	}
+
+	return nil
+}
+
+func (service ServiceTx) RemoveEndpointRelationsForEdgeStack(endpointIDs []portainer.EndpointID, edgeStackID portainer.EdgeStackID) error {
+	for _, endpointID := range endpointIDs {
+		rel, err := service.EndpointRelation(endpointID)
+		if err != nil {
+			return err
+		}
+
+		delete(rel.EdgeStacks, edgeStackID)
+
+		identifier := service.service.connection.ConvertToKey(int(endpointID))
+		err = service.tx.UpdateObject(BucketName, identifier, rel)
+		cache.Del(endpointID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := service.service.updateStackFnTx(service.tx, edgeStackID, func(edgeStack *portainer.EdgeStack) {
+		edgeStack.NumDeployments -= len(endpointIDs)
+	}); err != nil {
+		log.Error().Err(err).Msg("could not update the number of deployments")
+	}
 
 	return nil
 }

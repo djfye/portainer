@@ -184,6 +184,7 @@ export function IngressForm({
                       }
                       noOptionsMessage={() => 'No namespaces available'}
                       data-cy="k8sAppCreate-namespaceSelect"
+                      id="k8sAppCreate-namespaceSelect"
                     />
                   )}
                 </div>
@@ -266,6 +267,7 @@ export function IngressForm({
                         }
                         noOptionsMessage={() => 'No ingress classes available'}
                         data-cy="k8sAppCreate-ingressClassSelect"
+                        id="k8sAppCreate-ingressClassSelect"
                       />
                       {errors.className && (
                         <FormError className="error-inline mt-1">
@@ -464,6 +466,7 @@ export function IngressForm({
                           noOptionsMessage={() => 'No TLS secrets available'}
                           size="sm"
                           data-cy={`k8sAppCreate-tlsSelect_${hostIndex}`}
+                          id={`k8sAppCreate-tlsSelect_${hostIndex}`}
                         />
                         {!host.NoHost && (
                           <div className="input-group-btn">

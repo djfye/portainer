@@ -30,7 +30,7 @@ export function TeamsField({
             'You can select which team(s) will be able to manage this resource.'
           : undefined
       }
-      inputId="teams-selector"
+      inputId="authorized-teams-selector"
       errors={errors}
     >
       {teams.length > 0 ? (
@@ -39,7 +39,7 @@ export function TeamsField({
           teams={teams}
           onChange={onChange}
           value={value}
-          inputId="teams-selector"
+          inputId="authorized-teams-selector"
           dataCy="teams-selector"
         />
       ) : (

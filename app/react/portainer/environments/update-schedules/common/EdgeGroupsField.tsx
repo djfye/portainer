@@ -54,6 +54,7 @@ export function EdgeGroupsField({
           closeMenuOnSelect={false}
           isDisabled={disabled}
           data-cy="update-schedules-edge-groups-select"
+          id="update-schedules-edge-groups-select"
         />
       </FormControl>
       <TextTip color="blue">
